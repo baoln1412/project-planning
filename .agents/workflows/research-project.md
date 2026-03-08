@@ -38,4 +38,14 @@ description: Deep-research an existing project idea
    - Risk matrix (likelihood × impact)
    - Sources / references
 
-7. **Suggest next steps**: Run `/generate-plan` to continue with the full planning pipeline.
+7. **Create/update `findings.md`** — Write a persistent memory file that captures:
+   - All discovered constraints (technical, business, regulatory)
+   - Key market insights and differentiation opportunities
+   - Competitor strategies worth noting
+   - Risk items and proposed mitigations
+   - Open questions that need user input
+   - Any "deal-breaker" findings flagged with `[!CAUTION]`
+
+   This file persists across planning phases so context is never lost.
+
+8. **Suggest next steps**: Run `/generate-plan` to continue with the full planning pipeline.

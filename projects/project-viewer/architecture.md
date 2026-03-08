@@ -2,120 +2,289 @@
 
 ## Overview
 
-The Project Viewer is a server-side rendered (SSR) application designed to read and visualize Markdown project plans from the local filesystem. It uses a **Next.js 14+** architecture to achieve high performance and live data updates.
+The Project Viewer follows a **monolithic, server-rendered architecture** using Next.js 15. A single Node.js process serves both the React frontend and API endpoints, reading Markdown files from the `projects/` directory at runtime. A file watcher (`chokidar`) detects changes and pushes updates to connected clients. The architecture is designed to evolve from a simple local dev tool (Phase 1) to a production-ready team tool (Phase 2) and eventually a scalable hosted service (Phase 3).
 
-## Phase 1: Test / MVP (Current Goal)
+## Phase 1: Test / MVP
 
 ### Design Goals
-
--   **Fast Development**: Minimal setup, reading directly from the `projects/` directory.
--   **Live Updates**: Every page load re-reads the filesystem.
--   **No Database**: All project data is stored in existing Markdown files.
+- **Fast to build**: Single Next.js app, no external services
+- **Zero config for users**: Point to `projects/` folder and run
+- **Real-time updates**: File watcher triggers page refresh
+- **Team accessible**: Bind to `0.0.0.0` for LAN access
 
 ### Architecture Diagram
 
 ```mermaid
-graph TD
-    User[👤 User] --> Web[🌐 Next.js App]
-    subgraph "Server (Next.js SSR)"
-        Page[Next.js Page] --> FS[fs.readdir / fs.readFile]
-        FS --> Matter[gray-matter Parser]
-        Matter --> Render[react-markdown Renderer]
+graph LR
+    subgraph "Local Network"
+        U1["👤 User 1 (Owner)"]
+        U2["👤 User 2-5 (Team)"]
     end
-    Render --> UI[✨ Visual Dashboard UI]
-    UI --> User
+
+    subgraph "Node.js Server"
+        Next["Next.js 15<br>App Router"]
+        API["API Routes<br>/api/projects"]
+        Watcher["chokidar<br>File Watcher"]
+    end
+
+    subgraph "File System"
+        Projects["projects/<br>Markdown Files"]
+    end
+
+    U1 --> Next
+    U2 --> Next
+    Next --> API
+    API --> Projects
+    Watcher --> Projects
+    Watcher -->|"invalidate cache"| API
 ```
 
 ### Components
 
 | Component | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Project Discoverer** | Next.js Server Side | Scans `projects/` for `overview.md` files to build the dashboard. |
-| **Doc Renderer** | `react-markdown` | Renders project planning documents into readable HTML. |
-| **Diagram Engine** | `mermaid.js` | Client-side rendering of architecture and Gantt charts. |
+|---|---|---|
+| Frontend | Next.js 15 (React Server Components) | Render project dashboard, cards, detail views |
+| API Layer | Next.js API Routes | Serve project data, search, version history |
+| Markdown Parser | gray-matter + react-markdown | Parse frontmatter, render Markdown to React |
+| Diagram Renderer | mermaid (client-side) | Render Mermaid code blocks as SVG diagrams |
+| File Watcher | chokidar | Detect file changes, invalidate in-memory cache |
+| Search | fuse.js (client-side) | Fuzzy search across project names and content |
+| Diff Engine | diff (server-side) | Generate text diffs for version comparison |
+
+### Key API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/projects` | List all projects with metadata |
+| GET | `/api/projects/[slug]` | Get full project data (all docs) |
+| GET | `/api/projects/[slug]/versions` | Get CHANGELOG entries |
+| GET | `/api/projects/[slug]/diff` | Generate diff between two versions |
+| GET | `/api/search?q=...` | Search across all projects |
+
+### Estimated Cost: $0/mo
+Running on a local machine or existing dev server.
 
 ---
 
-## Phase 2: Production (Transition Trigger: 10+ Projects)
+## Phase 2: Production
 
 ### Trigger to Transition
-
-Transition to Phase 2 when the project list grows enough to require better performance (e.g., more than 10-20 projects, making live re-reads slower).
+- Team grows beyond 5 people
+- Need reliable uptime (not tied to one person's laptop)
+- Want HTTPS for secure access outside LAN
 
 ### Architecture Diagram
 
 ```mermaid
 graph TB
-    subgraph "Client"
-        Web[🌐 Dashboard App]
+    subgraph "Client Layer"
+        Web["🌐 Web Browser"]
     end
-    subgraph "Server"
-        API[API Routes]
-        Cache[(File Cache / KV Store)]
+
+    subgraph "Reverse Proxy"
+        Nginx["Nginx / Caddy<br>SSL Termination"]
     end
-    subgraph "Data"
-        Projects[(Local Markdown Files)]
+
+    subgraph "Application"
+        Next["Next.js 15<br>App + API"]
+        Watcher["chokidar<br>File Watcher"]
+        Cache["In-Memory Cache<br>Project Data"]
     end
-    Web --> API
-    API --> Cache
-    Cache -- Check Cache --> API
-    API -- Read on Cache Miss --> Projects
+
+    subgraph "File System"
+        Projects["projects/<br>Markdown Files"]
+        Git["Git Repository<br>Version History"]
+    end
+
+    subgraph "Observability"
+        Logs["PM2 Logs"]
+        Health["/api/health<br>Health Check"]
+    end
+
+    Web --> Nginx --> Next
+    Next --> Cache
+    Cache --> Projects
+    Watcher --> Projects
+    Watcher -->|"invalidate"| Cache
+    Next --> Git
+    Next --> Logs
+    Next --> Health
 ```
 
 ### New Components
 
--   **Caching Layer**: Using a simple in-memory cache or KV store to avoid redundant file reads.
--   **Advanced Search**: Indexing project content for full-text fuzzy search (via Fuse.js on the client).
+| Component | Technology | Purpose |
+|---|---|---|
+| Reverse Proxy | Nginx or Caddy | SSL termination, HTTP/2, gzip compression |
+| Process Manager | PM2 | Auto-restart, cluster mode, log management |
+| Git Integration | simple-git | Read commit history for version tracking |
+| Health Check | /api/health endpoint | Monitor uptime |
+
+### Security Measures
+- HTTPS via Let's Encrypt (automated with Caddy)
+- Basic auth or IP allowlist for access control
+- `react-markdown` XSS protection (HTML escaping by default)
+- `rehype-sanitize` for additional Markdown safety
+
+### Estimated Cost: $5-15/mo
+Small VPS (e.g., DigitalOcean $6/mo droplet) + domain ($12/yr).
 
 ---
 
-## Phase 3: Scale (Transition Trigger: Multi-User Access)
+## Phase 3: Scale
 
 ### Trigger to Transition
-
-Transition to Phase 3 if the tool needs to be shared with multiple collaborators or accessed remotely via a hosted server.
+- Multiple teams / organizations using the tool
+- Need multi-tenancy (multiple `projects/` directories)
+- Demand for hosted/managed version
 
 ### Architecture Diagram
 
 ```mermaid
 graph TB
     subgraph "Edge"
-        LB[Load Balancer]
-        CDN[CDN]
+        CDN["CDN<br>Cloudflare"]
+        DNS["DNS<br>Cloudflare"]
     end
-    subgraph "Compute"
-        Next[Next.js Server Cluster]
+
+    subgraph "Load Balancing"
+        LB["Load Balancer"]
     end
-    subgraph "Storage"
-        DB[(PostgreSQL / Supabase)]
-        S3[(S3 Object Storage - for project files)]
+
+    subgraph "App Instances"
+        App1["Next.js Instance 1"]
+        App2["Next.js Instance N"]
     end
-    LB --> Next
-    Next --> DB
-    Next --> S3
-    CDN --> Next
+
+    subgraph "Shared Storage"
+        NFS["NFS / S3<br>Project Files"]
+        Redis["Redis<br>Cache + Pub/Sub"]
+    end
+
+    subgraph "Observability"
+        Sentry["Sentry<br>Error Tracking"]
+        Grafana["Grafana<br>Monitoring"]
+    end
+
+    DNS --> CDN --> LB
+    LB --> App1 & App2
+    App1 & App2 --> NFS
+    App1 & App2 --> Redis
+    App1 & App2 --> Sentry
+    App1 & App2 --> Grafana
 ```
 
 ### Scaling Strategy
+- **Horizontal**: Multiple Next.js instances behind load balancer
+- **Caching**: Redis for shared project data cache across instances
+- **Storage**: Shared file system (NFS) or S3 for project files
+- **CDN**: Cloudflare for static assets and SSR caching
+- **Pub/Sub**: Redis pub/sub for file change notifications across instances
 
--   **S3 for Files**: Moving project files to object storage if they become too large for local disk.
--   **Database**: Introducing a database for project metadata and user-specific viewing preferences.
+### Performance Optimizations
+- Pre-parsed Markdown cached in Redis (avoid re-parsing on every request)
+- Incremental cache invalidation (only changed files, not full scan)
+- Client-side route prefetching for project detail pages
+- Mermaid diagram SVG caching (diagrams rarely change)
+
+### Estimated Cost: $50-150/mo
+VPS cluster + Redis + monitoring services.
+
+---
 
 ## Data Architecture
 
-### ERD
+### Data Model
 
 ```mermaid
 erDiagram
-    PROJECT ||--o{ VERSION : has
-    PROJECT ||--|| OVERVIEW : contains
-    PROJECT ||--|| TECH_STACK : contains
-    PROJECT ||--|| ARCHITECTURE : contains
+    PROJECT {
+        string slug PK "Folder name"
+        string name "From overview.md title"
+        string status "Planning, Ready, In Development"
+        string summary "First paragraph of overview.md"
+        datetime lastUpdated "File modification time"
+    }
+
+    DOCUMENT {
+        string slug FK "Project slug"
+        string type PK "overview, research, tech-stack, etc."
+        string content "Raw Markdown content"
+        object frontmatter "Parsed YAML frontmatter"
+        datetime lastModified "File mtime"
+    }
+
+    VERSION {
+        string slug FK "Project slug"
+        string version PK "Version identifier"
+        string date "Version date"
+        string summary "Version summary"
+        string content "Full Markdown at that version"
+    }
+
+    PROJECT ||--o{ DOCUMENT : "has"
+    PROJECT ||--o{ VERSION : "has"
 ```
 
 ### Key Data Flows
 
-1.  User visits the dashboard.
-2.  Next.js Server reads all subdirectories in `projects/`.
-3.  Each `overview.md` is parsed for its title, status, and summary.
-4.  Data is passed as props to the React frontend and rendered as project cards.
+1. **Project Discovery**: Server scans `projects/` → reads each `overview.md` → extracts name, status, summary → builds project index
+2. **Document Rendering**: Client requests project detail → server reads all `.md` files in project folder → parses frontmatter + content → sends to client → React renders Markdown + Mermaid
+3. **Version Comparison**: Client requests diff → server reads CHANGELOG.md → parses version entries → runs `diff` library → sends diff data → client renders side-by-side view
+4. **File Change Detection**: `chokidar` watches `projects/` → on file change → invalidates in-memory cache → next request gets fresh data
+
+---
+
+## API Design
+
+### Key Endpoints
+
+```
+GET  /api/projects              → ProjectSummary[]
+GET  /api/projects/:slug        → ProjectDetail (all documents)
+GET  /api/projects/:slug/docs/:type → Single document content
+GET  /api/projects/:slug/versions   → VersionEntry[]
+GET  /api/projects/:slug/diff?from=v1&to=v2 → DiffResult
+GET  /api/search?q=query        → SearchResult[]
+GET  /api/health                → { status: "ok", uptime, projectCount }
+```
+
+### Response Shapes
+
+```typescript
+interface ProjectSummary {
+  slug: string;
+  name: string;
+  status: 'planning' | 'ready' | 'in-development';
+  summary: string;
+  lastUpdated: string; // ISO 8601
+  documentCount: number;
+}
+
+interface ProjectDetail {
+  slug: string;
+  name: string;
+  status: string;
+  documents: Document[];
+  versions: VersionEntry[];
+}
+
+interface Document {
+  type: string; // 'overview' | 'research' | 'tech-stack' | ...
+  content: string; // Raw Markdown
+  frontmatter: Record<string, unknown>;
+  lastModified: string;
+}
+
+interface VersionEntry {
+  version: string;
+  date: string;
+  summary: string;
+}
+
+interface DiffResult {
+  fromVersion: string;
+  toVersion: string;
+  changes: DiffChange[];
+}
+```

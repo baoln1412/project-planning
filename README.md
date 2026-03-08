@@ -51,6 +51,7 @@ project-planning/
 │   └── <project-slug>/            # One folder per project
 │       ├── overview.md
 │       ├── research.md
+│       ├── findings.md
 │       ├── tech-stack.md
 │       ├── architecture.md
 │       ├── implementation-plan.md
@@ -125,4 +126,29 @@ Once you've run `/export-project`, the generated `handoff.md` contains everythin
 | Project | Status | Description |
 |---|---|---|
 | `_template` | — | Template files for new projects |
-| *(your projects will appear here)* | | |
+| `project-viewer` | 🟢 Ready | Visual dashboard for reviewing project plans |
+
+---
+
+## Usage Notes
+
+### Model Selection
+
+This workspace involves complex reasoning, architecture design, and multi-phase planning. For best results, use **high-reasoning AI models**:
+
+| Model | Provider | Best For |
+|---|---|---|
+| **Opus 4.6** | Anthropic | Deep architecture planning, Socratic refinement, risk analysis |
+| **GPT 5.2** | OpenAI | Broad research, tech stack evaluation, implementation planning |
+
+Lighter models may skip planning steps, produce shallow analysis, or fail to challenge assumptions during Socratic refinement.
+
+### Context Hygiene
+
+> [!IMPORTANT]
+> **Start fresh chat sessions** when:
+> - Pivoting to a drastically different project idea
+> - Doing major architecture overhauls (`/update-project` with significant scope change)
+> - Switching between unrelated projects
+
+This workspace relies on `findings.md` for persistent memory, so context is preserved across sessions. However, a cluttered context window can cause the AI to confuse details between phases. When in doubt, start a new conversation and let the AI re-read the project files.

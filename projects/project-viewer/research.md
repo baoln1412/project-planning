@@ -1,133 +1,177 @@
 # Research: Project Viewer
 
+> **Researched**: 2026-03-08  
+> **Status**: Complete
+
 ## Executive Summary
 
-The Project Viewer is a web application designed to visualize and review Markdown-based project plans from the `project-planning` workspace. Research reveals a **strong technical foundation** for building this — mature libraries exist for Markdown rendering (`react-markdown`, `marked`), Mermaid diagram support (`mermaid.js`), and file system access (Node.js `fs` API). The concept sits at the intersection of **documentation viewers** and **project portfolio dashboards**, a space with many general-purpose tools but no purpose-built solution for browsing structured planning folders.
+The Project Viewer concept — a web dashboard for browsing Markdown-based project plans — sits at the intersection of two well-established markets: **developer documentation tools** (~$2.55B technical writing tool market, growing ~8% YoY) and **project management dashboards** (part of the broader $7.5B+ software dev tools market). The demand for structured, visual interfaces over raw files is validated by tools like Docusaurus, MkDocs, GitBook, and Backstage, all of which have achieved significant adoption.
 
-The competitive landscape shows that while tools like Notion, Obsidian, Docusaurus, and MkDocs handle Markdown rendering well, none are designed specifically as a read-only visual dashboard for browsing a structured project planning workspace with versioning. This represents a **clear differentiation opportunity** — a lightweight, focused tool rather than a full knowledge base or documentation platform.
+However, **no existing tool directly solves the exact problem**: providing a visual, read-only dashboard specifically designed for browsing a local directory of Markdown project plan files with version history, status tracking, and Mermaid diagram rendering. The closest alternatives either require a complex setup (Backstage), focus on public documentation sites (Docusaurus/MkDocs/VitePress), or are lightweight CLI tools without a polished UI (md-fileserver/mdts).
 
-Technical feasibility is **high**. All required capabilities (Markdown parsing, Mermaid rendering, file system access, search) have well-supported open-source libraries. A modern framework like Next.js or Astro can deliver a premium experience with minimal infrastructure.
+This creates a genuine **differentiation opportunity**: a purpose-built, zero-config viewer that reads from a `projects/` folder and renders a premium dashboard experience. The technical feasibility is high — mature libraries exist for every required feature (Markdown rendering, Mermaid diagrams, file system access, search).
 
 ## Market Analysis
 
 ### Market Size & Trends
 
-The broader project management software market was valued at ~$6.68B in 2024 and is projected to grow at a CAGR of ~15.7% through 2030. Key trends driving growth:
+| Segment | 2025 Value | Growth |
+|---|---|---|
+| Software Dev Tools | $7.57B | ~10% CAGR |
+| Technical Writing Tools | $2.55B | ~8% CAGR |
+| API Management | $6.89B | ~15% CAGR |
+| AI Developer Tools | $4.5B | ~30% CAGR |
 
-- **AI-powered insights** — dashboards increasingly use AI for predictive analytics and risk identification
-- **Markdown-first workflows** — developer tools are moving toward Markdown-based documentation (GitHub, Obsidian, Notion)
-- **Static site generators** — Astro, Docusaurus, and MkDocs are seeing rapid adoption for documentation sites
-- **Low-code dashboards** — tools like Metabase, Appsmith, and ToolJet are making custom dashboards accessible
+**Key trends fueling demand:**
+- **Docs-as-code** philosophy: managing docs alongside code using Markdown, Git, and CI/CD
+- **AI integration**: generative AI for writing, editing, and publishing documentation
+- **Cloud-based collaboration**: real-time editing and sharing are now expected
+- **Version control**: seamless Git integration and built-in versioning
+- **Interactive content**: embedding diagrams, widgets, and components in docs
 
 ### Target Demographics
 
-| Segment | Description |
-|---|---|
-| Solo developers / founders | Planning projects before building, want visual overview |
-| Small teams (2–10) | Collaborating on project plans, need shared visibility |
-| Technical project managers | Reviewing architecture and implementation plans |
-| AI workspace users | Using Antigravity or similar tools, need a way to review generated plans |
+- **Solo developers / indie hackers** managing multiple project ideas
+- **Small teams** coordinating project planning before development
+- **Technical leads** who maintain a portfolio of planned projects
+- **Architects & planners** who use Markdown-heavy planning workflows
 
 ### Demand Signals
 
-- Growing adoption of Markdown-based planning tools (Obsidian, Logseq, Notion)
-- Increasing demand for "docs-as-code" workflows
-- Reddit/HN discussions about better ways to visualize Markdown documentation
-- No existing tool specifically designed for browsing structured project planning folders
+- GitHub has become the most desired tool for code documentation (surpassing Jira)
+- 92% of developers use AI tools, contributing to a 25% productivity boost
+- Growing community around static site generators (Docusaurus 50K+ GitHub stars, MkDocs/Material 20K+)
+- Reddit/forum discussions frequently request lightweight Markdown viewers with folder browsing
 
 ## Competitor Analysis
 
 ### Direct Competitors
 
-There are **no direct competitors** that match this exact use case — a read-only visual dashboard for browsing structured Markdown project plans with versioning. However, several tools overlap in functionality:
+No tool directly replaces the Project Viewer concept. The closest are documentation platforms repurposed for this use case:
 
-| Name | Type | Pricing | Strengths | Weaknesses | Differentiation Gap |
+| Tool | Type | Pricing | Strengths | Weaknesses | Tech Stack |
 |---|---|---|---|---|---|
-| **Notion** | Knowledge base | Free–$10/user/mo | Rich Markdown editing, databases, views | Heavy, not file-based, no Mermaid native | Not focused on read-only project review |
-| **Obsidian** | Markdown editor | Free / $50 commercial | File-based, graph view, plugins | Desktop-only (no web), editing-focused | No project dashboard, no web access |
-| **GitHub** | Code platform | Free–$21/user/mo | Renders Markdown, version history | Not a dashboard, requires repo navigation | No card-based project overview |
-| **Outline** | Wiki | Free (self-host) | Real-time collab, modern UI, Markdown | Requires server, database, not file-based | Overkill for read-only plan viewing |
+| **Docusaurus** | Static site generator | Free (OSS) | Rich plugin ecosystem, React/MDX, versioning, search | Heavy setup for simple use case, needs build step, not a dashboard | React, MDX |
+| **MkDocs** | Static site generator | Free (OSS) | Python-based, simple YAML config, Material theme | Material theme entering maintenance mode (late 2025), no dashboard view | Python, Jinja2 |
+| **VitePress** | Static site generator | Free (OSS) | Blazing fast (Vite), Vue components, minimal config | Vue-centric, no file-system browser dashboard | Vue 3, Vite |
+| **GitBook** | Documentation platform | Freemium ($8/mo+) | Polished UI, GitHub integration, real-time editing | SaaS dependency, not local-first, no project status tracking | Proprietary |
+| **Notion** | All-in-one workspace | Freemium ($10/mo+) | Flexible, customizable, collaborative | Not Markdown-native, requires import/export, no Mermaid | Proprietary |
+| **Confluence** | Enterprise wiki | $6.05/user/mo+ | Enterprise features, Atlassian integration | Heavy, expensive, not developer-friendly for Markdown | Java |
 
 ### Indirect Competitors
 
-| Name | Type | Overlap |
+| Tool | Type | Relevance |
 |---|---|---|
-| **Docusaurus** | Docs site generator | Renders Markdown with sidebars, but requires build step and is docs-focused |
-| **MkDocs** (Material) | Docs site generator | Beautiful Markdown rendering, but linear docs structure, not dashboard |
-| **Astro Starlight** | Docs theme | Modern, fast Markdown docs, but not designed for project portfolio browsing |
-| **BookStack** | Documentation platform | Organized content, but wiki-style not project-planning-style |
+| **Backstage** (Spotify) | Developer portal framework | Closest conceptually — centralized hub for docs and projects. But extremely heavy, requires Kubernetes knowledge, designed for large orgs |
+| **GitHub Web UI** | Repository browser | Can browse Markdown files natively with rendering. But no dashboard view, no project cards, no status tracking |
+| **VS Code** | Code editor | Markdown preview built-in, extensions for Mermaid. But no dashboard — it's a code editor, not a viewer |
 
 ### Open Source Alternatives
 
-| Tool | URL | Relevance |
-|---|---|---|
-| **Glow** | github.com/charmbracelet/glow | CLI Markdown viewer — terminal only, no web UI |
-| **Grip** | github.com/joeyespo/grip | Renders GitHub-flavored Markdown locally — single file, no dashboard |
-| **Markserv** | github.com/markserv/markserv | Live Markdown server — basic file listing, no cards/dashboard |
-| **Focalboard** | github.com/mattermost/focalboard | Project management boards — Kanban style, not Markdown-plan focused |
+| Tool | Description | Strengths | Weaknesses |
+|---|---|---|---|
+| **md-fileserver** | Local server for rendering Markdown in browser | File-system reading, live reload | Basic UI, no dashboard view, no project structure awareness |
+| **mdts** (Markdown Tree Server) | CLI tool for browsing Markdown folder | File tree sidebar, offline-first | CLI-only, minimal UI, no cards or status |
+| **simple-md-viewer** | React library for Markdown folder display | React component, folder navigation | Library only (not standalone), basic rendering |
+| **MarkdownManager** | Self-hosted Markdown viewer/editor | Direct file system access, PHP | Dated UI, PHP stack, no modern features |
+| **Typemill** | Lightweight Markdown CMS | File-based storage, YAML config | CMS not viewer, editing-focused, PHP-based |
 
 ## Technical Feasibility
 
 ### Available APIs & Services
 
-| Need | Solution | Maturity |
-|---|---|---|
-| Read Markdown files | Node.js `fs` module | ⭐⭐⭐⭐⭐ Built-in |
-| Parse Markdown → HTML | `marked`, `react-markdown`, `unified`/`remark` | ⭐⭐⭐⭐⭐ Very mature |
-| Render Mermaid diagrams | `mermaid.js` (client-side SVG rendering) | ⭐⭐⭐⭐⭐ Used by GitHub, Notion |
-| Syntax highlighting | `highlight.js`, `Prism.js`, `shiki` | ⭐⭐⭐⭐⭐ Very mature |
-| Full-text search | `fuse.js` (client-side fuzzy search) | ⭐⭐⭐⭐ Lightweight |
-| Frontend framework | Next.js, Astro, Vite + React | ⭐⭐⭐⭐⭐ Production-ready |
-| Table support | GFM (GitHub Flavored Markdown) support in all major parsers | ⭐⭐⭐⭐⭐ |
+Since this is a **local-first** application reading from the file system, no external APIs are strictly required. Key technical capabilities:
+
+- **File System Access**: Node.js `fs` module for server-side, or static build-time reading
+- **Markdown Frontmatter Parsing**: `gray-matter` npm package for extracting metadata from Markdown files
+- **Git Integration** (optional): `simple-git` npm package for reading commit history and diffs
 
 ### Recommended Libraries
 
-| Library | Purpose | npm Weekly Downloads |
+| Need | Library | Why |
 |---|---|---|
-| `react-markdown` | React component for rendering Markdown | ~3M |
-| `mermaid` | Diagram rendering from text | ~1.5M |
-| `gray-matter` | Parse YAML frontmatter from Markdown files | ~4M |
-| `fuse.js` | Lightweight fuzzy search | ~1.5M |
-| `shiki` | Syntax highlighting (used by Astro, VitePress) | ~3M |
-| `date-fns` | Date formatting | ~20M |
+| **Markdown → HTML** | `react-markdown` + `remark-gfm` | Industry standard, safe (no dangerouslySetInnerHTML), supports GFM tables |
+| **Mermaid Diagrams** | `mermaid` (official) | 70K+ npm weekly downloads, supports all diagram types, active development |
+| **Alternative Mermaid** | `beautiful-mermaid` | Newer, better themes, synchronous rendering, zero-DOM — worth evaluating |
+| **Syntax Highlighting** | `rehype-highlight` or `shiki` | Code block rendering in Markdown |
+| **Search** | `flexsearch` or `fuse.js` | Client-side full-text search, lightweight |
+| **Date/Time** | `date-fns` | Lightweight date formatting for "last updated" |
+| **Markdown Frontmatter** | `gray-matter` | Parse YAML frontmatter from Markdown files |
 
 ### Infrastructure Requirements
 
-- **Minimal**: This is a read-only app that reads local files
-- **No database needed** — data comes from the filesystem
-- **No auth needed** (v1) — single-user local tool
-- **Hosting**: Can run locally (`npm run dev`) or deploy as a static site
-- **Build time**: Can use Next.js static export or Astro for zero-JS pages
+**Approach A — Static Site (recommended for v1):**
+- Build at compile time using Next.js, Astro, or VitePress
+- Read `projects/` folder during build, generate static pages
+- Deploy to Vercel, Netlify, or GitHub Pages (free)
+- **Pro**: Zero runtime dependencies, fast, free hosting
+- **Con**: Requires rebuild to see changes
+
+**Approach B — Lightweight Node.js Server:**
+- Express/Fastify server reading `projects/` at runtime
+- WebSocket or polling for live updates
+- **Pro**: Real-time, no rebuild needed
+- **Con**: Requires running server process
+
+**Approach C — Hybrid (recommended for v2+):**
+- Next.js with ISR (Incremental Static Regeneration) or Astro with server endpoints
+- Static pages with on-demand revalidation via file-system watcher
+- **Pro**: Best of both worlds — fast static serving with live updates
+- **Con**: Slightly more complex setup
+
+### Build Complexity Assessment
+
+| Feature | Complexity | Notes |
+|---|---|---|
+| Project card grid | Low | Standard UI component |
+| Markdown rendering | Low | `react-markdown` handles most cases |
+| Mermaid diagrams | Medium | Requires async initialization, SSR considerations |
+| Version history (CHANGELOG) | Medium | Parsing CHANGELOG.md or Git history |
+| Status filtering | Low | Simple state management |
+| Search | Low-Medium | `fuse.js` for fuzzy search across project data |
+| Dark mode | Low | CSS variables + toggle |
+| Side-by-side version diff | High | Requires diff algorithm and split-pane UI |
 
 ## Risk Assessment
 
 | Risk | Category | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| Mermaid diagrams render inconsistently | Technical | Low | Med | Use official `mermaid.js`, test across diagram types |
-| Large number of projects slows load time | Technical | Low | Low | Lazy loading, pagination, static generation |
-| Markdown parsing edge cases (tables, nested lists) | Technical | Med | Low | Use `remark-gfm` plugin for GFM support |
-| Scope creep into full project management tool | Business | Med | High | Keep scope strict: read-only viewer, no editing |
-| No demand beyond personal use | Business | Med | Low | Build for personal use first; open-source later if useful |
-| File system access not available in browser | Technical | Low | Med | Use SSR (Next.js) or build-time generation (Astro) for file access |
+| Mermaid SSR issues | Technical | Medium | Medium | Use client-side rendering with loading states; consider `beautiful-mermaid` for sync rendering |
+| Scope creep beyond viewer into editor/PM tool | Business | High | High | Enforce read-only scope in v1; resist adding editing features |
+| Limited user base (personal/small teams) | Business | Medium | Low | Accept niche scope — this is a personal productivity tool, not a SaaS product |
+| Markdown rendering edge cases | Technical | Medium | Low | Use well-tested `react-markdown` + `remark-gfm`; define supported Markdown subset |
+| Performance with many projects | Technical | Low | Medium | Static build handles scale well; lazy-load project details |
+| Dependency on Mermaid.js maintenance | Technical | Low | Medium | Mermaid.js is actively maintained with 70K+ weekly downloads; low risk |
+| Material for MkDocs entering maintenance mode | Technical | Low | Low | Not a direct dependency but relevant trend — validates the need for alternatives |
+| Security (XSS from rendered Markdown) | Technical | Medium | High | `react-markdown` escapes HTML by default; use `rehype-sanitize` for extra safety |
 
 ## Key Insights
 
-- **No direct competitor exists** for this exact use case — a read-only Markdown project plan viewer with versioning and Mermaid support
-- **Technical feasibility is very high** — all needed libraries are mature and well-maintained
-- **The biggest risk is scope creep** — resist adding editing capabilities; this is a viewer
-- **Two viable architecture paths**: (1) Next.js with server-side file reading, or (2) Astro with build-time static generation
-- **Mermaid.js is the critical dependency** — it's well-supported but rendering must be client-side
-- **Astro Starlight** is the closest existing solution, but it's a docs framework not a project dashboard — differentiating through card-based dashboard UI is key
+- **No direct competitor exists** — this is a greenfield opportunity in a niche (Markdown project plan viewer/dashboard)
+- **All required libraries are mature** — Markdown rendering, Mermaid, search, and file-system access are solved problems
+- **Static site approach is ideal for v1** — simplest deployment, free hosting, good enough for a solo/small team use case
+- **Differentiation is built-in** — the app is purpose-built for `project-planning` workspace structure, not a generic docs site
+- **Biggest risk is scope creep** — the temptation to add editing, task management, or collaboration features should be resisted in v1
+- **Mermaid diagram support is critical** — architecture docs in this workspace rely heavily on them
+- **VitePress or Next.js are the strongest technical choices** — VitePress for simplicity, Next.js for flexibility
 
 ## Sources
 
-1. [Mermaid.js GitHub](https://github.com/mermaid-js/mermaid) — Diagram rendering library
-2. [react-markdown GitHub](https://github.com/remarkjs/react-markdown) — React Markdown renderer
-3. [Astro Docs](https://astro.build) — Static site generator with Starlight theme
-4. [Docusaurus](https://docusaurus.io) — Meta's documentation framework
-5. [MkDocs](https://www.mkdocs.org) — Python-based docs generator
-6. [Outline](https://getoutline.com) — Open source knowledge base
-7. [Obsidian](https://obsidian.md) — Markdown knowledge management
-8. [BookStack](https://www.bookstackapp.com) — Open source documentation platform
-9. [Fuse.js](https://fusejs.io) — Lightweight fuzzy search library
-10. [OpenProject](https://www.openproject.org) — Open source project management
+1. [Developer documentation tools market analysis](https://mordorintelligence.com) — Software Development Tools Market, 2025
+2. [Technical Writing Tool Market](https://wiseguyreports.com) — $2.55B valuation, 2025
+3. [Stack Overflow Developer Survey 2025](https://stackoverflow.co) — GitHub adoption trends
+4. [Daily.dev Developer Trends](https://daily.dev) — AI tool adoption statistics
+5. [Docusaurus](https://docusaurus.io) — Meta's documentation framework
+6. [MkDocs](https://mkdocs.org) — Python static site generator
+7. [VitePress](https://vitepress.dev) — Vite-powered static site generator
+8. [GitBook](https://gitbook.com) — Documentation platform
+9. [Mermaid.js](https://mermaid.js.org) — JavaScript diagramming library
+10. [react-markdown](https://github.com/remarkjs/react-markdown) — Safe Markdown rendering for React
+11. [beautiful-mermaid](https://npmjs.com/package/beautiful-mermaid) — Advanced Mermaid renderer
+12. [Backstage](https://backstage.io) — Spotify's developer portal framework
+13. [md-fileserver](https://github.com/nicerloop/md-fileserver) — Local Markdown server
+14. [mdts](https://github.com/nicholasgasior/mdts) — Markdown Tree Server CLI
+15. [simple-md-viewer](https://github.com/nicholasgasior/simple-md-viewer) — React Markdown viewer component
+16. [Typemill](https://typemill.net) — Lightweight Markdown CMS
+17. [Material for MkDocs maintenance announcement](https://squidfunk.github.io/mkdocs-material) — Transitioning to Zensical
+18. [ferndesk.com](https://ferndesk.com) — Docusaurus pricing analysis

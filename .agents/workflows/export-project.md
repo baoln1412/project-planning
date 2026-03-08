@@ -6,17 +6,28 @@ description: Export a project for handoff to a development workspace
 
 ## Prerequisites
 - A project folder must exist under `projects/<project-slug>/` with all planning files completed:
-  - `overview.md`, `research.md`, `tech-stack.md`, `architecture.md`, `implementation-plan.md`
+  - `overview.md`, `research.md`, `findings.md`, `tech-stack.md`, `architecture.md`, `implementation-plan.md`
 
 ## Steps
 
 1. **Identify the project.** If no project slug is provided, list available projects and ask the user to pick one.
 
-2. **Read all planning documents** to build comprehensive context.
+2. **Read all planning documents** (including `findings.md`) to build comprehensive context.
 
-3. **Verify completeness**. Check that all 5 planning documents exist and have substantive content. If any are missing or thin, warn the user and suggest running the relevant workflow first.
+3. **Verify completeness**. Check that all 6 planning documents exist and have substantive content. If any are missing or thin, warn the user and suggest running the relevant workflow first.
 
-4. **Generate `handoff.md`** with the following sections:
+4. **⛔ DATA-FIRST GATE (MANDATORY)** — Before generating `handoff.md`, enforce the Data-First Rule:
+
+   - **Demand JSON schemas** — Ask the user to define the exact input and output data shapes for all core data flows. For example:
+     ```
+     "What does the main API request payload look like?"
+     "What does the response payload look like?"
+     "What does a [core entity] object look like in the database?"
+     ```
+   - **Present schemas for confirmation** — Format them as JSON and ask the user to approve or modify.
+   - **🚫 BLOCK HANDOFF** — Do NOT proceed to generate `handoff.md` until the user has confirmed the data schemas.
+
+5. **Generate `handoff.md`** with the following sections:
 
    ### Project Overview
    - 1-paragraph summary of what's being built
@@ -29,6 +40,12 @@ description: Export a project for handoff to a development workspace
    ### Tech Stack
    - Exact technologies with **specific versions**
    - Link back to `tech-stack.md`
+
+   ### Data Contracts ← NEW (Data-First Rule)
+   - JSON input schemas for all core endpoints/flows
+   - JSON output schemas for all core endpoints/flows
+   - Database entity schemas
+   - Any data transformation rules
 
    ### Environment Setup
    - Step-by-step setup commands (clone, install, configure)
@@ -51,8 +68,8 @@ description: Export a project for handoff to a development workspace
    ### References
    - Links to all planning documents in this project folder
 
-5. **Update `overview.md` status** to `🟢 Ready for Development`.
+6. **Update `overview.md` status** to `🟢 Ready for Development`.
 
-6. **Present the handoff document** to the user for final review.
+7. **Present the handoff document** to the user for final review.
 
-7. **Instruct the user**: This `handoff.md` can now be referenced from another Antigravity workspace to begin development. Point the dev workspace to this file path.
+8. **Instruct the user**: This `handoff.md` can now be referenced from another Antigravity workspace to begin development. Point the dev workspace to this file path.

@@ -16,6 +16,16 @@
 
 {{Who will use this? What are their needs?}}
 
+## Discovery Answers
+
+| # | Question | Answer |
+|---|---|---|
+| 🎯 | **North Star**: Singular desired outcome? | {{answer}} |
+| 🔌 | **Integrations**: External services/APIs needed? | {{answer}} |
+| 💾 | **Source of Truth**: Where does primary data live? | {{answer}} |
+| 📦 | **Delivery Payload**: How/where is the result delivered? | {{answer}} |
+| 🚫 | **Behavioral Rules**: Constraints or "Do Not" rules? | {{answer}} |
+
 ## Key Features
 
 - [ ] {{Feature 1}}

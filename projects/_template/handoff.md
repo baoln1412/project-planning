@@ -38,6 +38,39 @@ See [tech-stack.md](./tech-stack.md) for full evaluation and rationale.
 
 ---
 
+## Data Contracts
+
+> ⛔ These schemas were confirmed by the user via the Data-First Rule before handoff.
+
+### Input Schemas
+
+```json
+// {{Endpoint / Flow Name}} — Request
+{
+  "{{field}}": "{{type}}"
+}
+```
+
+### Output Schemas
+
+```json
+// {{Endpoint / Flow Name}} — Response
+{
+  "{{field}}": "{{type}}"
+}
+```
+
+### Database Entities
+
+```json
+// {{Entity Name}}
+{
+  "{{field}}": "{{type}}"
+}
+```
+
+---
+
 ## Environment Setup
 
 ### Prerequisites
@@ -119,6 +152,7 @@ See [implementation-plan.md](./implementation-plan.md) for the full milestone br
 
 - [Project Overview](./overview.md)
 - [Research](./research.md)
+- [Findings (Persistent Memory)](./findings.md)
 - [Tech Stack](./tech-stack.md)
 - [Architecture](./architecture.md)
 - [Implementation Plan](./implementation-plan.md)
