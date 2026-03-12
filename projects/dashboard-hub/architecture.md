@@ -1,54 +1,101 @@
 # Architecture: Dashboard Hub
 
 ## Overview
-Dashboard Hub uses a modern, serverless architecture centered around Next.js on Vercel. The system serves dual purposes: a B2C storefront for selling tracking dashboards, and a B2B admin portal where Antigravity AI generates new dashboard components. User tracking data never touches our database; our Next.js backend securely proxies requests from the user's browser to their personal Google Sheet using OAuth credentials stored in Supabase.
+Dashboard Hub uses a modern, serverless architecture centered around Next.js on Vercel. The system serves dual purposes: a B2C storefront for selling tracking dashboards, and an admin workspace for generating new dashboard components. User tracking data lives in their personal Google Sheets — the platform caches Sheet data in Supabase for performance and reads/writes through a secure proxy.
 
 ## Phase 1: MVP & Storefront Validation
 
 ### Design Goals
 - **Zero Fixed Cost:** Use Vercel and Supabase free tiers.
-- **Data Privacy:** Read/write directly to Google Sheets; do not store tracking data in Supabase.
-- **Manual Payment Security:** Stripe checkout links, but admin manually flips the `has_access` flag in Supabase to prevent unauthorized scraping or data leaks.
+- **Data Privacy:** Cache Google Sheets data in Supabase for performance, but user's Sheet remains source of truth.
+- **Instant Access:** Stripe Webhooks auto-approve purchases — no manual admin gate.
+- **Free Tier:** 1 free dashboard (Habit Tracker) to prove value before asking for payment.
 
 ### Architecture Diagram
 
 ```mermaid
-graph LR
-    subgraph "External Providers"
-        Google[Google Sheets API]
-        Stripe[Stripe Checkout]
+graph TB
+    subgraph "Users"
+        User["👤 Customer"]
     end
 
-    subgraph "Vercel Edge"
-        Next[Next.js 15 App]
-        NextAuth[Auth.js<br>Manages Tokens]
+    subgraph "Vercel"
+        Next["Next.js 15<br>App Router"]
+        API["API Routes<br>Stripe Webhook"]
+        ISR["ISR<br>SEO Pages"]
     end
 
     subgraph "Supabase"
-        Auth[User Accounts]
-        DB[(PostgreSQL<br>Catalog & Purchases)]
-    end
-    
-    subgraph "Users"
-        User[👤 Customer]
-        Admin[👤 Admin (You)]
+        Auth["Auth<br>Google OAuth"]
+        DB[("PostgreSQL<br>Accounts + Purchases")]
+        Cache[("sheet_cache<br>Cached Sheet Data")]
     end
 
-    User -->|Views Store| Next
+    subgraph "External"
+        Google["Google Sheets API"]
+        Stripe["Stripe Checkout"]
+    end
+
+    User -->|Browse/Buy| Next
+    User -->|OAuth Login| Auth
     User -->|Pays| Stripe
-    User -->|OAuth Login| NextAuth
-    NextAuth <--> Auth
-    Next <--> DB
-    Next -->|Reads/Writes Data| Google
-    
-    Admin -->|Manual Approval| DB
+    Stripe -->|Webhook: auto-approve| API
+    API --> DB
+    Next -->|Reads cached data| Cache
+    Next -->|Sync every 5-15 min| Google
+    Google -->|Fresh data| Cache
+    ISR -->|SEO product pages| Next
 ```
 
 ### Components
-- **Next.js App Router**: Handles storefront rendering, user dashboard views, and secured API routes.
-- **Auth.js**: Manages "Sign in with Google," requesting the `drive.file` scope, and storing the short-lived access tokens.
-- **Supabase DB**: Holds user profiles, the catalog of available dashboards, and a `purchases` join table mapping users to dashboards.
-- **Google Sheets API**: The actual backend for the life trackers. Next.js fetches data from here on behalf of the logged-in user.
+- **Next.js App Router**: Storefront rendering, dashboard views, secured API routes, ISR for SEO pages.
+- **Auth.js**: Google OAuth with `drive.file` scope. Only accesses Sheets the user explicitly grants.
+- **Supabase DB**: User profiles, dashboard catalog, purchases table, AND `sheet_cache` table.
+- **sheet_cache**: Cached Google Sheets data. Refreshed every 5-15 minutes or on user demand. Eliminates Google API rate limit issues.
+- **Stripe Webhooks**: Listens for `checkout.session.completed` — auto-toggles purchase access. No manual approval.
+- **Google Sheets API**: Source of truth for user tracking data. Accessed via background sync, not on every page load.
+
+### Key Data Flows
+
+**Sheet Caching Flow:**
+```mermaid
+sequenceDiagram
+    participant User
+    participant Dashboard as Next.js Dashboard
+    participant Cache as Supabase sheet_cache
+    participant Sheets as Google Sheets API
+
+    User->>Dashboard: Opens dashboard
+    Dashboard->>Cache: Read cached data
+    Cache-->>Dashboard: Return cached rows
+    Dashboard-->>User: Render dashboard (fast)
+    
+    Note over Dashboard,Sheets: Background sync (every 5-15 min)
+    Dashboard->>Sheets: Fetch latest data
+    alt Sheet is valid
+        Sheets-->>Cache: Update cache
+    else Sheet is broken
+        Note over Cache: Keep last-good data
+        Dashboard-->>User: Show warning + cached data
+    end
+```
+
+**Purchase Flow:**
+```mermaid
+sequenceDiagram
+    participant User
+    participant Store as Next.js Store
+    participant Stripe
+    participant Webhook as API Route
+    participant DB as Supabase
+
+    User->>Store: Click "Buy" on dashboard
+    Store->>Stripe: Redirect to Checkout
+    User->>Stripe: Complete payment
+    Stripe->>Webhook: checkout.session.completed
+    Webhook->>DB: Set is_approved = true
+    Webhook-->>User: Redirect to dashboard (instant access)
+```
 
 ### Estimated Cost: $0/mo
 
@@ -57,105 +104,111 @@ graph LR
 ## Phase 2: Automation & Performance
 
 ### Trigger to Transition
-- You have 3+ successful dashboard sales.
-- Manual payment approvals become a bottleneck.
-- Google Sheets API limits are causing slow load times for users.
+- 3+ successful dashboard sales
+- Google Sheets sync needs optimization for multiple concurrent users
+- SEO traffic warrants dedicated content strategy
 
 ### Architecture Diagram
 
 ```mermaid
 graph TB
     subgraph "Users"
-        User[👤 Customer]
+        User["👤 Customers"]
     end
 
-    subgraph "Vercel Managed Infrastructure"
-        Next[Next.js App Server]
-        KV[(Redis Cache)]
-    end
-
-    subgraph "Third Party Services"
-        Stripe[Stripe Webhooks]
-        Google[Google Sheets API]
+    subgraph "Vercel"
+        Next["Next.js App"]
+        Edge["Edge Functions<br>Rate Limiting"]
+        ISR2["ISR + Blog<br>Content Marketing"]
     end
 
     subgraph "Supabase"
-        DB[(PostgreSQL Primary)]
+        DB[("PostgreSQL Primary")]
+        Cache2[("sheet_cache<br>+ sync queue")]
+        Auth2["Auth + RLS"]
+    end
+
+    subgraph "External"
+        Google["Google Sheets API"]
+        Stripe2["Stripe Webhooks"]
+    end
+
+    subgraph "AI Generation"
+        IDE["Antigravity IDE<br>Local Generation"]
+        Design["_design/ + _dashboards/"]
     end
 
     User --> Next
-    Next --> KV
-    KV -->|Cache Miss| Google
-    
-    Stripe -->|Webhook Auto-Approve| Next
-    Next -->|Update Access| DB
+    Next --> Cache2
+    Cache2 -->|"Background sync"| Google
+    Stripe2 --> Next --> DB
+    Auth2 --> Next
+    IDE --> Design
+    ISR2 -->|"SEO blog"| Next
 ```
 
-### New Components & Upgrades
-- **Stripe Webhooks**: Replaces manual approval. When a user buys, a webhook automatically updates the `purchases` table in Supabase.
-- **Redis Caching (Vercel KV)**: Google Sheets APIs rate limit strictly (100 reqs/100sec). We must cache API responses for 10-30 seconds to prevent the dashboard from crashing if the user refreshes rapidly.
+### New Components
+- **Google Stitch MCP** (`@_davideast/stitch-mcp`): Visual design layer — generate UI screens from prompts, extract "Design DNA" (fonts, colors, layouts), export React/HTML code. This replaces text-only prompting for dashboard generation.
+- **AI Dashboard Generation**: Stitch designs → Design DNA → Antigravity adapts exported React to shadcn/ui + Recharts + Next.js. Google Sheets MCP auto-creates Master Sheet templates.
+- **Sync Queue**: Instead of simple cron, a queue-based sync handles multiple users' Sheets efficiently.
+- **Blog / Content Marketing**: SEO content pages built with ISR for organic traffic.
+- **Edge Functions**: Rate limiting on API routes to prevent abuse.
 
-### Security Measures
-- Stripe Webhook signature verification to prevent spoofed purchases.
-- SWR (Stale-While-Revalidate) caching strategy to hide Google API latency.
-
-### Estimated Cost: $45/mo 
-(Vercel Pro $20 + Supabase Pro $25 for higher database performance/backups).
+### Estimated Cost: $45/mo
+(Vercel Pro $20 + Supabase Pro $25)
 
 ---
 
 ## Phase 3: Scale & Multi-Tenancy
 
 ### Trigger to Transition
-- Thousands of users. 
-- You want to allow *other* creators to design and sell their own dashboards on your platform (converting from a first-party store to a marketplace).
+- Thousands of users
+- You want to allow other creators to sell dashboards (marketplace model)
 
 ### Architecture Diagram
 
 ```mermaid
 graph TB
-    subgraph "Global Edge Network"
-        CDN[Vercel Edge Network]
-        WAF[Web Application Firewall]
+    subgraph "Global Edge"
+        CDN["Vercel Edge Network"]
+        WAF["Web Application Firewall"]
     end
 
-    subgraph "Application Cluster"
-        API[Next.js Serverless Functions]
-        Workers[Background Job Queue]
+    subgraph "Application"
+        API3["Next.js Serverless"]
+        Workers["Background Sync Workers"]
     end
 
-    subgraph "Data & Storage Layer"
-        Primary[(Supabase Primary DB)]
-        Replica[(Supabase Read Replica)]
-        Cache[(Redis Enterprise)]
+    subgraph "Data Layer"
+        Primary[("Supabase Primary")]
+        Replica[("Read Replica")]
+        Cache3[("sheet_cache")]
     end
 
-    subgraph "External Integrations"
-        Google[Google Sheets APIs]
-        Stripe[Stripe Connect]
+    subgraph "External"
+        Google3["Google Sheets APIs"]
+        StripeConnect["Stripe Connect"]
     end
 
-    CDN --> WAF --> API
-    API --> Cache
-    API --> Primary
-    API --> Replica
-    API --> Stripe
-    API -.->|Offload Sync| Workers
-    Workers --> Google
+    CDN --> WAF --> API3
+    API3 --> Primary
+    API3 --> Replica
+    API3 --> Cache3
+    Workers -->|"Batch sync"| Google3
+    Workers --> Cache3
+    StripeConnect -->|"Platform fee"| API3
 ```
 
 ### Scaling Strategy
-- **Stripe Connect**: Instead of standard Checkout, use Connect to route payouts to third-party dashboard creators while taking a platform fee.
-- **Background Sync Workers**: Instead of fetching from Google Sheets while the user waits for the page to load, background workers keep the cache warm.
-- **Database Read Replicas**: Supabase read replicas handle the heavy load of listing the catalog and validating user permissions.
+- **Stripe Connect**: Route payouts to third-party dashboard creators while taking a platform fee.
+- **Background Sync Workers**: Batch Sheet sync for all users — keep cache warm proactively.
+- **Database Read Replicas**: Handle catalog listings and purchase validation at scale.
 
 ### Estimated Cost: $150+/mo
 
 ---
 
 ## Data Architecture
-
-Because user tracking data lives in Google Sheets, our database schema is incredibly lightweight.
 
 ### ERD (Supabase)
 
@@ -173,40 +226,50 @@ erDiagram
         string slug "e.g., reading-tracker"
         string title
         string description
-        string master_sheet_url "Link to the Google Sheet template"
-        integer price_cents
+        string master_sheet_url "Google Sheet template link"
+        integer price_cents "0 = free tier"
         boolean is_active
+        string seo_title
+        string seo_description
     }
 
     purchases {
         uuid id PK
         uuid user_id FK
         uuid dashboard_id FK
-        boolean is_approved "Manual gate for MVP"
+        boolean is_approved "Auto-set by Stripe Webhook"
+        string stripe_session_id
         datetime purchased_at
+    }
+
+    sheet_connections {
+        uuid id PK
+        uuid user_id FK
+        uuid dashboard_id FK
+        string sheet_url "User's cloned Sheet URL"
+        datetime last_synced_at
+        string sync_status "ok | error | stale"
+    }
+
+    sheet_cache {
+        uuid id PK
+        uuid connection_id FK
+        jsonb data "Cached Sheet rows as JSON"
+        jsonb last_good_data "Fallback if current sync fails"
+        datetime cached_at
     }
 
     users ||--o{ purchases : "makes"
     dashboards ||--o{ purchases : "bought in"
+    users ||--o{ sheet_connections : "connects"
+    dashboards ||--o{ sheet_connections : "linked to"
+    sheet_connections ||--|| sheet_cache : "cached in"
 ```
 
-## IDE-Based AI Generation Flow
-
-*Note: The AI generator is NOT hosted on the web app for security and simplicity. All dashboard generation happens locally in the creator's IDE.*
-
-```mermaid
-sequenceDiagram
-    actor Admin
-    participant IDE as Local Antigravity IDE
-    participant Repo as Local Filesystem
-    
-    Admin->>IDE: Call `/generate-dashboard` skill for `_dashboards/[target]`
-    IDE->>Repo: Read global `_design/brand/` guidelines
-    IDE->>Repo: Read specific idea mockups from `_dashboards/[target]/`
-    IDE->>Repo: Research & Write `src/app/dashboard/[new-slug]/page.tsx` utilizing Tremor
-    IDE->>Repo: Create JSON schema doc for Google Sheet
-    IDE-->>Admin: "Code generated. Please create the Master Google Sheet."
-    
-    Admin->>Admin: Manually create Master Sheet from schema
-    Admin->>Repo: Commit code & push
-```
+### Key Schema Changes from v1
+- **`sheet_connections` table** (NEW): Tracks which user connected which Sheet to which dashboard. Stores sync status.
+- **`sheet_cache` table** (NEW): Stores cached Sheet data as JSONB. Includes `last_good_data` for fallback when the user's Sheet is broken/modified.
+- **`dashboards.price_cents = 0`**: Enables free tier dashboards (Habit Tracker).
+- **`dashboards.seo_title/seo_description`**: SEO metadata per dashboard product page.
+- **`purchases.stripe_session_id`**: Links purchase to Stripe session for audit trail.
+- **Removed**: manual `is_approved` toggle is now auto-set by Stripe Webhook.

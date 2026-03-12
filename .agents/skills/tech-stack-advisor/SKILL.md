@@ -81,6 +81,15 @@ For each category, produce a table like:
    - Budget constraints for hosted services?
 6. **Finalize recommendations** based on user feedback
 
+## Reasoning Approach
+
+Use the `sequentialthinking` MCP tool when building comparison tables. For each technology category:
+- **Thought 1–N**: Score each option across the 7 criteria, one at a time
+- **Revision thoughts**: Revisit earlier scores as ecosystem fit between chosen technologies becomes clearer (e.g., choosing Supabase for DB may boost Supabase Auth's ecosystem fit score)
+- **Final thought**: Calculate weighted totals and state your recommendation with rationale
+
+This prevents scoring bias from evaluating all criteria simultaneously and allows course correction as the full stack picture emerges.
+
 ## Output Format
 
 Write to `projects/<project-slug>/tech-stack.md`:

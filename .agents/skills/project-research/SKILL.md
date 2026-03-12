@@ -82,6 +82,12 @@ Categories to evaluate:
 - **Legal/Regulatory**: Data privacy (GDPR, CCPA), compliance, licensing
 - **Operational**: Vendor lock-in, single points of failure
 
+## Reasoning Approach
+
+Use the `sequentialthinking` MCP tool for two key analytical steps:
+1. **Risk Assessment** — Evaluate each risk individually (likelihood × impact), then use revision thoughts to re-rank as new risks are discovered that change the relative severity
+2. **Executive Summary** — Synthesize findings across all 4 research areas into a coherent narrative, using thoughts to identify the most impactful insights
+
 ## Output Format
 
 Write all findings to `projects/<project-slug>/research.md` with this structure:

@@ -1,54 +1,93 @@
 # Implementation Plan: Dashboard Hub
 
-This plan outlines the build process from project initialization to a functioning Phase 1 (MVP) and Phase 2 (AI Generation) application.
+This plan outlines the build process from project initialization to a functioning MVP with validated revenue, followed by AI-powered expansion.
 
 ## Milestone 1: Foundation & Authentication
-**Goal:** Scaffold the app, set up the database, and implement Google OAuth to secure the `drive.file` scope.
-**Estimated Effort:** M/L (Complex Auth Flow)
+**Goal:** Scaffold the app, set up the database, and implement Google OAuth for `drive.file` scope.
+**Estimated Effort:** M/L
 
-- [ ] Initialize Next.js 15 (App Router) with Tailwind CSS and Tremor.
-- [ ] Set up the Supabase project and run initial Drizzle migrations for `users`, `dashboards`, and `purchases` tables.
-- [ ] Configure Auth.js with the Google Provider.
-- [ ] **Critical:** Configure the Google OAuth scope to specifically request `https://www.googleapis.com/auth/drive.file`.
-- [ ] Create a secure server utility to retrieve the Google Access Token from the current session for use in backend fetches.
-- [ ] Build the basic homepage and navigation shell.
+- [ ] Initialize Next.js 15 (App Router) with Tailwind CSS 4.x
+- [ ] Install shadcn/ui components (Button, Card, Dialog, Table, Input, etc.)
+- [ ] Set up the Supabase project and run Drizzle migrations for `users`, `dashboards`, `purchases`, `sheet_connections`, `sheet_cache` tables
+- [ ] Configure Auth.js with Google Provider, requesting `drive.file` scope
+- [ ] Create a secure server utility to retrieve Google Access Token from session
+- [ ] Build the basic homepage / navigation shell
+- [ ] Set up GitHub repo + CI (linting, type checks)
 
-## Milestone 2: Storefront & Manual Purchases
-**Goal:** Build the B2C storefront so users can browse available dashboards and see what they have purchased.
+## Milestone 2: Free Dashboard + Sheets Integration + Caching
+**Goal:** Prove the core value proposition — 1 free Habit Tracker dashboard that reads from a user's cloned Google Sheet via Supabase cache.
+**Estimated Effort:** L (Core Technical Challenge)
+
+- [ ] Create a Master Sheet template for the free Habit Tracker (specific column schema)
+- [ ] Build one-click Sheet cloning flow (deep link: `/spreadsheets/d/{ID}/copy`)
+- [ ] Build Sheet connection UI: user pastes their cloned Sheet URL → stored in `sheet_connections`
+- [ ] Implement Google Sheets API server-side fetcher using user's OAuth token
+- [ ] Build the caching layer: fetch Sheet data → store in `sheet_cache` as JSONB
+- [ ] Implement background sync: refresh cache every 5-15 min (or on-demand "Refresh" button)
+- [ ] Build the Habit Tracker dashboard page with Recharts + shadcn/ui components
+- [ ] Build demo mode: show dashboard with pre-loaded sample data for non-connected users
+- [ ] **Critical:** Implement defensive parsing + `last_good_data` fallback when Sheet is broken
+- [ ] Add error boundaries with user-friendly messages ("Column 'A' missing in your Sheet")
+
+## Milestone 3: Storefront + Premium Dashboards + Stripe
+**Goal:** Launch the paid storefront with 2 premium dashboards and instant-access Stripe payments.
 **Estimated Effort:** M
 
-- [ ] Seed the Supabase `dashboards` table with 1-2 manual entries (e.g., a dummy "Habit Tracker").
-- [ ] Build the `/store` page to list all active dashboards.
-- [ ] Build the `/product/[slug]` page showing dashboard details and a "Buy" button (linking to a Stripe Checkout / Payment Link).
-- [ ] Build the `/dashboard` index page showing the user's purchased templates (reading from `purchases` table).
-- [ ] Create the Admin UI to manually toggle the `is_approved` flag on purchases.
+- [ ] Build `/store` page listing all dashboards (free and premium)
+- [ ] Build `/product/[slug]` SEO-optimized landing pages with meta tags, Open Graph, structured data
+- [ ] Hand-craft 2 premium dashboards (e.g., Reading Tracker, Fitness Tracker) with dedicated Sheet templates
+- [ ] Integrate Stripe Checkout: "Buy" button → Stripe payment link
+- [ ] Build Stripe Webhook endpoint (`/api/webhooks/stripe`):
+  - [ ] Verify webhook signature
+  - [ ] Listen for `checkout.session.completed`
+  - [ ] Auto-set `is_approved = true` in `purchases` table
+  - [ ] Redirect user to their new dashboard (instant access)
+- [ ] Build `/dashboard` index page showing user's purchased + free dashboards
+- [ ] Seed `dashboards` table with all 3 products (1 free + 2 premium)
 
-## Milestone 3: The Dashboard Engine & Sheets Integration
-**Goal:** Prove the core value proposition — reading from a user's cloned Google Sheet and rendering it beautifully with Tremor.
-**Estimated Effort:** L (Complex Data Parsing)
+## Milestone 4: SEO + Onboarding Polish
+**Goal:** Drive organic traffic and reduce friction for new users.
+**Estimated Effort:** S/M
 
-- [ ] Create a Master Sheet template for a sample Habit Tracker with a specific column schema.
-- [ ] Provide instructions in the web app on how users can clone the Master Sheet and paste their new Sheet URL into the app.
-- [ ] Implement the Google Sheets API server-side fetcher using the user's OAuth token.
-- [ ] Build the Next.js page `/dashboard/[slug]` that parses the raw Google Sheets JSON array into structured TypeScript objects.
-- [ ] Build Tremor components (BarCharts, DataLists) to visualize the Sheet data.
-- [ ] **Critical:** Implement robust try/catch error boundaries to handle cases where the user broke the Sheet schema.
+- [ ] Create a blog layout + 2-3 SEO posts ("Best habit tracking methods 2026", "Why you should own your data")
+- [ ] Add sitemap.xml and robots.txt
+- [ ] Build step-by-step onboarding flow:
+  1. Sign in with Google
+  2. Clone the Master Sheet (one click)
+  3. Paste your Sheet URL
+  4. See your data in the dashboard
+- [ ] Add loading states, empty states, and responsive design polish
+- [ ] Set up Vercel Analytics for traffic monitoring
+- [ ] Performance optimization: Server Components, dynamic imports, image optimization
 
-## Milestone 4: Dedicated AI Dashboard Generation Skill & Design System
-**Goal:** Establish the global brand guidelines and build a dedicated Antigravity "Skill" so the IDE can autonomously research components, consume dedicated idea folders, and generate new on-brand dashboards locally.
+## Milestone 5: AI Dashboard Generation (Post-Revenue Validation)
+**Goal:** After proving the market with hand-crafted dashboards, enable AI-powered expansion.
 **Estimated Effort:** S
 
-- [ ] Create a `_design/brand/` directory for global assets (logos, colors, theme variables, general UI preferences).
-- [ ] Create a `_dashboards/` directory. Each new dashboard idea will live in its own subfolder here (e.g., `_dashboards/reading-tracker/`), storing its specific image mockups, component references, and prompt descriptions.
-- [ ] Document the workflow in `README.md` (e.g., "To create a new product: 1. Create a folder in `_dashboards/[name]`. 2. Put UI references there. 3. Call the `generate-dashboard` skill.").
-- [ ] **Create an Antigravity Skill:** Write `.agents/skills/generate-dashboard/SKILL.md`. This skill instruction file must explicitly instruct the Antigravity IDE to:
-  1. Read the global brand guidelines from `_design/brand/`.
-  2. Read the specific dashboard idea from `_dashboards/[target-folder]/`.
-  3. Research and implement appropriate Tremor components.
-  4. Write the Next.js page route securely.
-  5. Output the required Google Columns and Apps Script formulas for a new Master Sheet.
+- [ ] Create `_design/brand/` directory for global assets (logos, colors, theme variables, UI preferences)
+- [ ] Create `_dashboards/` directory with subfolders for each dashboard idea (mockups, descriptions)
+- [ ] Build Antigravity Skill (`.agents/skills/generate-dashboard/SKILL.md`) that:
+  1. Reads brand guidelines from `_design/brand/`
+  2. Reads specific dashboard idea from `_dashboards/[target]/`
+  3. Researches and implements shadcn/ui + Recharts components
+  4. Writes Next.js page route + Google Sheet schema
+- [ ] Document the workflow in README.md
 
 ---
 
+## Key Differences from v1
+
+| Area | v1 (Previous) | v2 (Current) |
+|---|---|---|
+| Purchase flow | Manual admin approval | Stripe Webhooks auto-approval |
+| UI library | Tremor | shadcn/ui + Recharts |
+| Tailwind | 3.x | 4.x |
+| Free tier | None | 1 free Habit Tracker dashboard |
+| Demo mode | None | Preview with sample data |
+| Sheet data | Direct API calls every page load | Supabase `sheet_cache` with background sync |
+| Sheet cloning | "Instructions" text | One-click deep link |
+| SEO | None | SEO-optimized product pages + blog |
+| AI Generation | Milestone 4 (MVP) | Milestone 5 (post-revenue validation) |
+
 ## Next Steps
-Once this plan is approved, we can run the `/export-project` workflow to compile these documents into a final `handoff.md` file designed specifically for a development workspace to execute.
+Run `/export-project` to compile these documents into a final `handoff.md` for the development workspace.

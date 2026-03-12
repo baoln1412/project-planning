@@ -152,3 +152,7 @@ Lighter models may skip planning steps, produce shallow analysis, or fail to cha
 > - Switching between unrelated projects
 
 This workspace relies on `findings.md` for persistent memory, so context is preserved across sessions. However, a cluttered context window can cause the AI to confuse details between phases. When in doubt, start a new conversation and let the AI re-read the project files.
+
+### Sequential Thinking MCP
+
+This workspace leverages the **Sequential Thinking MCP** (`sequentialthinking` tool) for structured analytical reasoning during evaluations. The AI uses it automatically for multi-criteria tech stack scoring, risk assessment matrices, and architecture trade-off analysis — any step where step-by-step reasoning with revision produces better outcomes than evaluating everything at once.

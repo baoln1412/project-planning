@@ -173,6 +173,9 @@ graph TB
    - Any regulatory/compliance requirements (data residency, etc.)?
 3. **Design each phase** with appropriate Mermaid diagrams
 4. **Explain the transition triggers** — what metrics/events should prompt moving from Phase 1→2→3
+
+   > **Reasoning Approach**: Use the `sequentialthinking` MCP tool when designing each phase. Reason through component choices step by step — evaluate how Phase 1 decisions (e.g., monolithic API) constrain or enable Phase 2/3 evolution (e.g., microservice extraction). Use revision thoughts when a later-phase requirement forces reconsidering an earlier-phase choice.
+
 5. **Present to the user** and iterate based on feedback
 
 ## Output Format

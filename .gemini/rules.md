@@ -50,6 +50,28 @@ Record these answers in the `overview.md` under a **Discovery Answers** section.
 
 ---
 
+## Structured Reasoning (Sequential Thinking)
+
+Use the `sequentialthinking` MCP tool for **analytical reasoning steps** — any task that requires evaluating multiple dimensions, weighing trade-offs, or synthesizing information from several sources. Do **not** use it for simple file operations, template-based writing, or straightforward Q&A.
+
+**When to use it:**
+
+| Scenario | Example |
+|---|---|
+| **Multi-criteria evaluations** | Scoring tech stack options across 7 weighted criteria |
+| **Risk assessment** | Evaluating likelihood × impact for each risk, then prioritizing |
+| **Architecture trade-offs** | Deciding component choices and how Phase 1 decisions affect Phase 3 |
+| **Socratic refinement** | Reasoning through a user's proposal to identify weak points and formulate targeted challenges |
+| **Executive summary synthesis** | Distilling market data, competitor analysis, and feasibility into key insights |
+
+**How to use it:**
+- Start with an estimated number of thoughts, adjust as you go
+- Use revision to correct earlier assessments as new information emerges (e.g., ecosystem fit changes a score)
+- Use branching to explore alternative approaches when trade-offs are close
+- Set `nextThoughtNeeded: false` only when you've reached a defensible conclusion
+
+---
+
 ## Project Storage Structure
 
 ```

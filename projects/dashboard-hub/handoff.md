@@ -1,15 +1,15 @@
 # Handoff: Dashboard Hub
 
-> **Generated**: 2026-03-09  
-> **Status**: 🟢 Ready for Development
+> **Status**: 🟢 Ready for Development  
+> **Last Updated**: 2026-03-12 (v2.1)
 
 ---
 
 ## Project Overview
 
-A web application marketplace where users can purchase premium life/habit tracker dashboards. The unique value proposition is that the dashboards connect directly to the user's own Google Sheets, which act as their personal database. The platform uses Next.js, Supabase, and Auth.js (requesting strict `drive.file` OAuth scope). The creator uses the Antigravity IDE locally to generate new dashboard code and Master Sheet schemas.
+A marketplace for premium life/habit tracker dashboards powered by users' own Google Sheets. Users buy dashboards, clone a Master Sheet, connect it, and get a beautiful web dashboard. Data caching in Supabase eliminates Google API rate limits. Cache is **cleared and refreshed on every write-back**.
 
-> See full details: [overview.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/overview.md)
+> See full details: [overview.md](overview.md)
 
 ---
 
@@ -18,246 +18,211 @@ A web application marketplace where users can purchase premium life/habit tracke
 ```
 dashboard-hub/
 ├── src/
-│   ├── app/                          # Next.js App Router pages
-│   │   ├── (auth)/                   # Login routes
-│   │   ├── admin/                    # Admin portal for manual purchase approvals
-│   │   ├── store/                    # Public storefront listing dashboards
-│   │   ├── dashboard/                # Protected user dashboards
-│   │   │   ├── page.tsx              # Index showing purchased dashboards
-│   │   │   └── [slug]/               # Specific tracker views (e.g., reading-tracker)
-│   │   ├── api/                      # Protected API handlers
-│   │   │   └── webhooks/stripe/      # Stripe webhook handler (Phase 2)
-│   │   ├── layout.tsx                # Root layout (header, Tailwind/Tremor global styles)
-│   │   └── page.tsx                  # Home/Landing page
-│   ├── components/                   # Reusable React/Tremor components
-│   │   ├── DashboardCard.tsx
-│   │   ├── MasterSheetConnectForm.tsx
-│   │   └── charts/                   # Tremor wrapper components
+│   ├── app/                          # Next.js 15 App Router
+│   │   ├── (marketing)/              # Public pages
+│   │   │   ├── page.tsx              # Homepage / storefront
+│   │   │   └── product/[slug]/       # SEO product pages (ISR)
+│   │   ├── (auth)/                   # Auth routes
+│   │   ├── dashboard/                # Protected dashboard area
+│   │   │   ├── page.tsx              # User's purchased dashboards
+│   │   │   └── reading-tracker/      # First premium product
+│   │   │       ├── library/
+│   │   │       ├── progress/
+│   │   │       ├── schedule/
+│   │   │       └── challenges/
+│   │   └── api/
+│   │       ├── webhooks/stripe/
+│   │       ├── sheets/               # Sync + write-back routes
+│   │       └── reading-tracker/      # Product-specific API
+│   ├── components/
+│   │   ├── ui/                       # shadcn/ui (copy-paste, not npm)
+│   │   ├── dashboard/                # Shared dashboard components
+│   │   └── marketing/                # Storefront components
 │   ├── lib/
-│   │   ├── db/                       # Drizzle ORM schema & client
-│   │   ├── auth.ts                   # Auth.js configuration (Google Provider)
-│   │   ├── google.ts                 # Google Sheets API client (using stored access token)
-│   │   └── stripe.ts                 # Stripe server-side client
-│   └── types/                        # Global TypeScript interfaces
-├── .agents/                          # Local AI Agent Configuration
-│   └── skills/
-│       └── generate-dashboard/       # IDE Skill: Instructions for building a new dashboard
-│           └── SKILL.md              
+│   │   ├── supabase.ts
+│   │   ├── sheets.ts                 # Google Sheets API + write-back
+│   │   ├── cache.ts                  # sheet_cache CRUD + invalidation
+│   │   ├── stripe.ts
+│   │   └── auth.ts                   # Auth.js (Google OAuth, drive.file scope)
+│   └── db/
+│       ├── schema.ts                 # Drizzle schema
+│       └── migrations/
 ├── _design/
-│   └── brand/                        # Global brand assets, logos, and UI guidelines
-├── _dashboards/                      # Isolated folders for new dashboard ideas
-│   └── [idea-name]/                  # e.g., 'reading-tracker'. Holds specific mockups/prompts for this idea.
-├── public/                           # Static assets
-├── supabase/
-│   └── migrations/                   # Drizzle SQL migrations
-├── package.json
-├── tsconfig.json
-├── next.config.ts
-├── README.md                         
-└── .env.local                        # Environment variables
+│   └── brand/                        # Design DNA exports from Stitch
+├── _dashboards/
+│   └── reading-tracker/              # Stitch exports + idea files
+├── public/
+├── .env.local
+└── package.json
 ```
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Version | npm Package |
-|---|---|---|---|
-| Language | TypeScript | 5.x | `typescript` |
-| Framework | Next.js (App Router) | 15.x | `next`, `react`, `react-dom` |
-| Auth | Auth.js (NextAuth) | 5.x | `next-auth` |
-| CSS | Tailwind CSS | 3.x | `tailwindcss` |
-| UI Framework| Tremor | 3.x | `@tremor/react` |
-| Icons | Lucide React | latest | `lucide-react` |
-| ORM | Drizzle | 0.3x | `drizzle-orm`, `drizzle-kit` |
-| DB Driver | Postgres.js | latest | `postgres` |
-| API | Google APIs | 14x | `googleapis` |
-| Payments | Stripe Node | 16x | `stripe` |
+| Layer | Technology | Version |
+|---|---|---|
+| Framework | Next.js (App Router) | 15.x |
+| Language | TypeScript | 5.x |
+| Styling | Tailwind CSS | 4.x |
+| UI Components | shadcn/ui | latest |
+| Charts | Recharts | 2.x |
+| Calendar | react-day-picker (via shadcn) | latest |
+| Database | Supabase (PostgreSQL) | — |
+| ORM | Drizzle | latest |
+| Auth | Auth.js | 5.x |
+| Payments | Stripe | latest |
+| Design | Google Stitch MCP | `@_davideast/stitch-mcp` |
+| Hosting | Vercel | — |
 
-> See full evaluation: [tech-stack.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/tech-stack.md)
-
----
-
-## Data Contracts (Data-First Rule)
-
-Because user data lives in Google Sheets, the database schema is very small, focusing solely on the catalog and access control.
-
-### 1. Database Entities (Drizzle / Supabase)
-
-**`users`**
-Managed heavily by Auth.js, but we intercept the Google OAuth payload to extract the tokens.
-```typescript
-{
-  id: uuid,             // PK
-  email: string,
-  name: string,
-  image: string,
-  created_at: timestamp
-}
-```
-
-**`dashboards` (The Product Catalog)**
-```typescript
-{
-  id: uuid,             // PK
-  slug: string,         // e.g., 'reading-tracker'
-  title: string,
-  description: string,
-  price_cents: integer,
-  master_sheet_url: string, // URL to the public template users clone
-  is_active: boolean
-}
-```
-
-**`purchases` (The Access Control Join Table)**
-```typescript
-{
-  id: uuid,             // PK
-  user_id: uuid,        // FK to users.id
-  dashboard_id: uuid,   // FK to dashboards.id
-  is_approved: boolean, // Must be true for user to view the dashboard
-  user_sheet_id: string,// The ID of the cloned sheet the user connected
-  purchased_at: timestamp
-}
-```
-
-### 2. Core API Responses
-
-**`GET /api/store`** (Public: List available dashboards)
-```json
-[
-  {
-    "id": "uuid-123",
-    "slug": "reading-tracker",
-    "title": "Premium Reading Tracker",
-    "price_cents": 1500,
-    "description": "Track your books...",
-    "master_sheet_url": "https://docs.google.com/..."
-  }
-]
-```
-
-**`GET /api/user/purchases`** (Protected: List what the user bought)
-```json
-[
-  {
-    "purchase_id": "uuid-999",
-    "dashboard_id": "uuid-123",
-    "dashboard_slug": "reading-tracker",
-    "is_approved": true,
-    "user_sheet_id": "1BxiMVs0XRYFgCE9..."
-  }
-]
-```
-
-### 3. Google Sheets Integration Rules
-- **Token Handling:** The Next.js server MUST extract the Google Access Token from the Auth.js session (or refresh it if expired) to make calls to the Sheets API. This token should **never** be sent to the client browser.
-- **Defensive Parsing:** You cannot trust the shape of the data returned by `googleapis` because the user can freely edit their spreadsheet. Every API route fetching Sheet data must wrap the logic in `try/catch` and use Zod (or manual validation) to ensure the row array matches the expected component schema before returning it to the React frontend.
+> Full evaluation: [tech-stack.md](tech-stack.md)
 
 ---
 
-## Environment Setup
+## Data Contracts
 
-### Setup Commands
+### Supabase Tables (Confirmed)
+
+```sql
+create table public.profiles (
+  id text not null primary key,
+  email text not null unique,
+  role text not null default 'user',
+  created_at timestamp not null default now()
+);
+
+create table public.dashboards (
+  id text not null primary key,
+  slug text not null unique,
+  title text not null,
+  description text not null,
+  price_cents integer not null default 0,
+  master_sheet_url text not null,
+  is_active boolean not null default true,
+  created_at timestamp not null default now(),
+  discount_cents integer not null default 0,
+  thumbnail_url text null,
+  demo_images text null,
+  demo_video_url text null
+);
+
+create table public.purchases (
+  id text not null primary key,
+  user_id text not null references profiles(id),
+  dashboard_id text not null references dashboards(id),
+  is_approved boolean not null default false,
+  purchased_at timestamp not null default now(),
+  user_sheet_url text null,
+  payment_submitted boolean not null default false
+);
+
+-- Cache layer: cleared and refreshed on every write-back
+create table public.sheet_cache (
+  id text not null primary key,
+  purchase_id text not null references purchases(id),
+  tab_name text not null,
+  data jsonb not null default '[]'::jsonb,
+  last_good_data jsonb null,
+  cached_at timestamp not null default now(),
+  constraint sheet_cache_unique unique (purchase_id, tab_name)
+);
+```
+
+### Core API Endpoints
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/api/sheets/sync?purchaseId=` | Sync all tabs from Sheet → cache |
+| POST | `/api/sheets/write-back` | Write to Sheet → clear cache → re-fetch |
+| POST | `/api/reading-tracker/add-book` | Add book to Library tab |
+| POST | `/api/reading-tracker/log-session` | Log timer session to Reading Log |
+| GET | `/api/reading-tracker/book-search?q=` | Search Vietnamese books (P1) |
+
+### Cache Invalidation Rule
+
+```
+Write to Google Sheet → DELETE sheet_cache row → Re-fetch fresh data → INSERT
+```
+
+### Google Sheets Security Rules
+
+- Only `drive.file` scope (avoids $10K+ CASA audit)
+- Google token NEVER sent to client browser
+- All Sheet data treated as untrusted input (defensive parsing)
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side service role key |
+| `AUTH_SECRET` | Auth.js session encryption |
+| `AUTH_GOOGLE_ID` | Google OAuth client ID |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
+
+### Setup
 
 ```bash
-# 1. Initialize Next.js
-npx -y create-next-app@latest dashboard-hub --typescript --app --eslint --tailwind --no-src-dir --import-alias "@/*"
-cd dashboard-hub
-
-# 2. Install Core Dependencies
-npm install next-auth@beta drizzle-orm postgres @tremor/react lucide-react googleapis stripe 
-
-# 3. Install Dev Dependencies
-npm install -D drizzle-kit 
-
-# 4. Copy environment variables
-cp .env.example .env.local
-
-# 5. Run Database Migrations
-npx drizzle-kit push
-```
-
-### `.env.example`
-
-```env
-# Next.js App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# Auth.js required secret (generate with `openssl rand -hex 32`)
-AUTH_SECRET=
-
-# Google OAuth Credentials (Ensure drive.file scope is configured in GCP Console)
-AUTH_GOOGLE_ID=
-AUTH_GOOGLE_SECRET=
-
-# Supabase Postgres Connection String
-DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT].supabase.co:5432/postgres
-
-# Stripe Keys (Phase 2)
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+npx -y create-next-app@latest ./ --typescript --app --eslint --tailwind
+npx shadcn@latest init
+npx shadcn@latest add button card dialog table input tabs avatar badge calendar
+npm install recharts drizzle-orm postgres googleapis stripe next-auth@beta
+npm install -D drizzle-kit
 ```
 
 ---
 
 ## Architecture Reference
 
-### Key Constraints & Decisions
-- **Security Constraint (The Golden Rule):** We only request `https://www.googleapis.com/auth/drive.file`. This prevents triggering a $10,000+ Google CASA security audit. The app will *only* be able to read/write Google Sheets that the user explicitly creates via our app, or opens with our app via the Google Drive UI picker.
-- **XSS Prevention:** ALL string data read from Google Sheets must be treated as untrusted user input. Never use `dangerouslySetInnerHTML`.
-- **Admin AI Generation:** The Antigravity AI generation process does NOT happen on the web server. It is handled entirely locally in the admin's IDE (generating code + schemas) and pushed to git.
+Key decisions:
+- Google Sheets = source of truth (user owns data)
+- Supabase = ephemeral cache (cleared on write-back)
+- `user_sheet_url` on purchases (no separate sheet_connections table)
+- `payment_submitted` + `is_approved` = manual flow for MVP
+- Google Stitch MCP = visual design layer for dashboard generation
 
-> See full architecture & ERD: [architecture.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/architecture.md)
-
----
-
-## First Sprint / MVP Scope
-
-Build **Milestones 1–3** first (Foundation, Storefront, Auth, Dashboard Engine). Phase 2 (Stripe Webhooks & Web Caching) can wait until you have actual paying users.
-
-### MVP Acceptance Criteria
-- [ ] Users can log in via Google OAuth.
-- [ ] The app successfully requests and stores the `drive.file` access token.
-- [ ] Users can view the `/store` page (data seeded in Supabase).
-- [ ] Admin can manually toggle `is_approved` in Supabase for a user's purchase.
-- [ ] Approved users can access their purchased dashboard page.
-- [ ] The dashboard securely fetches their cloned Google Sheet data server-side and renders a Tremor chart without crashing.
-- [ ] The `_templates/` directory exists with instructions for the IDE on how to generate new dashboards.
-
-> See detailed milestones: [implementation-plan.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/implementation-plan.md)
+> Full diagrams: [architecture.md](architecture.md)
 
 ---
 
-## CI/CD Recommendations
+## First Sprint
 
-| Stage | Tool | Purpose |
-|---|---|---|
-| Hosting | Vercel | Zero-config deployments for Next.js App Router |
-| Database | Supabase | Managed Postgres; handle migrations via GitHub Actions or locally |
-| Repo | GitHub | Push to `main` triggers Vercel deploy |
+**M1**: Foundation + Auth → **M2**: Free Dashboard + Sheets + Caching
 
-```json
-{
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push"
-  }
-}
+Acceptance criteria:
+- [ ] Google OAuth login with `drive.file` scope
+- [ ] Supabase schema migrated (4 tables)
+- [ ] 1 free dashboard: clone Sheet → connect → see data → cache works
+- [ ] Cache invalidation on write-back functioning
+- [ ] Demo mode with sample data
+
+> Full milestones: [implementation-plan.md](implementation-plan.md)
+
+---
+
+## CI/CD
+
+```
+GitHub Push → Vercel Auto-Deploy (preview on PR, production on main)
+Local: tsc --noEmit → eslint . → next build
 ```
 
 ---
 
 ## References
 
-| Document | Path |
+| Doc | Content |
 |---|---|
-| Project Overview | [overview.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/overview.md) |
-| Research | [research.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/research.md) |
-| Persistent Findings | [findings.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/findings.md) |
-| Tech Stack | [tech-stack.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/tech-stack.md) |
-| Security Review | [security-review.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/security-review.md) |
-| Architecture | [architecture.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/architecture.md) |
-| Implementation Plan | [implementation-plan.md](file:///Users/lap15230/project-planning/projects/dashboard-hub/implementation-plan.md) |
+| [overview.md](overview.md) | Features, version history |
+| [tech-stack.md](tech-stack.md) | Technology evaluations |
+| [architecture.md](architecture.md) | 3-phase architecture, Mermaid diagrams |
+| [implementation-plan.md](implementation-plan.md) | 5 milestones, task breakdown |
+| [findings.md](findings.md) | Decisions and constraints |
+| [research.md](research.md) | Market analysis |
+| [v2/CHANGELOG.md](v2/CHANGELOG.md) | shadcn/ui + Stitch MCP guides |
