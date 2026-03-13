@@ -1,0 +1,140 @@
+# Getting Started — Claude Skills Ultimate Bundle
+
+Welcome to the Claude Skills Ultimate Bundle. This guide will get you up and running in under 2 minutes.
+
+---
+
+## What's in the Bundle
+
+You have **500+ skills** organized into 20 categories:
+
+- AI & Technology
+- Ads & Paid Media
+- Analytics & Data
+- Branding & Design
+- Client & Consulting
+- Content & Copywriting
+- Courses & Education
+- E-commerce & Products
+- Email Marketing & Automation
+- Events & Speaking
+- Finance & Pricing
+- HR & Team
+- Industry-Specific
+- Launch & Growth
+- Legal & Compliance
+- Nonprofit & Community
+- Operations & Systems
+- SEO & Search
+- Sales & Funnels
+- Social Media
+
+Each skill is a folder containing a `SKILL.md` file — a structured instruction set that tells Claude exactly how to handle a specific business task.
+
+---
+
+## Installation
+
+### Claude.ai (Web)
+
+1. Open [claude.ai](https://claude.ai) and click your profile icon
+2. Go to **Customize** → **Skills**
+3. Upload the skill folders you want to use
+4. Claude will automatically detect and use them when relevant to your conversation
+
+### Claude Code (CLI)
+
+Copy the skill folders into your Claude Code skills directory:
+
+**Make skills available everywhere (recommended):**
+
+```bash
+cp -r "Claude Skills Ultimate Bundle"/* ~/.claude/skills/
+```
+
+**Make skills available in a single project only:**
+
+```bash
+cp -r "Claude Skills Ultimate Bundle"/* your-project/.claude/skills/
+```
+
+That's it. Skills are immediately available.
+
+### Cowork
+
+1. Open your Cowork workspace
+2. Navigate to Skills settings
+3. Upload or sync the skill folders
+4. Skills activate automatically based on your requests
+
+---
+
+## How to Use Skills
+
+### Automatic Detection
+
+Just describe what you need in plain language. Claude will automatically detect the right skill and walk you through it.
+
+**Examples:**
+- "Write me a blog post about productivity tips" → triggers the `blog-post` skill
+- "I need a contract for a freelance designer" → triggers the `contract-writer` skill
+- "Help me plan a product launch" → triggers the `launch-checklist` skill
+
+### Slash Commands (Claude Code)
+
+In Claude Code, you can invoke any skill directly with a slash command:
+
+```
+/blog-post
+/email-sequence
+/sales-funnel-builder
+/contract-writer
+/sop-builder
+```
+
+The skill will ask you the right questions, then deliver polished output.
+
+---
+
+## How Skills Work
+
+Each skill guides Claude through a structured process:
+
+1. **Discovery** — Asks you targeted questions about your specific situation
+2. **Framework** — Applies proven methods (PAS for sales copy, AIDA for ads, etc.)
+3. **Output** — Delivers polished, ready-to-use results with professional formatting
+
+Skills are not prompts. They're structured systems that produce consistent, high-quality output every time.
+
+---
+
+## Tips
+
+- **Start with what you need today.** You don't need to install all 500+ skills at once. Pick the categories relevant to your work.
+- **Let Claude detect skills automatically.** You don't need to memorize slash commands — just describe your task naturally.
+- **Skills stack.** Use one skill to create a blog post, another to repurpose it into social media content, and another to write the email promoting it.
+- **Customize freely.** Each skill is a plain Markdown file. Edit any `SKILL.md` to adjust the process, tone, or output format to match your brand.
+
+---
+
+## Folder Structure
+
+```
+Claude Skills Ultimate Bundle/
+├── Content & Copywriting/
+│   ├── blog-post/
+│   │   └── SKILL.md
+│   ├── video-script/
+│   │   └── SKILL.md
+│   └── ...
+├── Email Marketing & Automation/
+│   ├── email-sequence/
+│   │   └── SKILL.md
+│   └── ...
+├── Sales & Funnels/
+│   └── ...
+└── [17 more categories]
+```
+
+Each skill = one folder with a `SKILL.md` file inside.
+
