@@ -10,6 +10,19 @@ Build an AI-powered UA Engine that automates campaign planning, creative product
 
 **North Star**: Fully automated closed-loop UA — from data analysis to live campaign in <15 minutes.
 
+> **📚 Data Reference**: All data schemas, metrics definitions, and log requirements follow the
+> [`game-publishing-data-architect`](../../.agents/skills/Analytics%20%26%20Data/game-publishing-data-architect/SKILL.md) skill.
+> Consult it for AppsFlyer schemas, in-game log formats, metric formulas, and data architecture standards.
+
+### Required Data Sources (4 inputs)
+
+| # | Data Source | Provider | Data |
+|---|-----------|----------|------|
+| 1 | **Marketing Data** | Facebook, Google, TikTok Ads | Cost, Campaign Info, Ads Performance |
+| 2 | **Event Tracking** | AppsFlyer (MMP) | Installs, In-app Events, Attribution |
+| 3 | **In-game Data** | Game Server (Kafka/Rsync) | Register, Login, Logout, Recharge, CCU |
+| 4 | **Platform Data** | VNG SDK | SDK Login + Billing/Payment |
+
 ---
 
 ## Repository Structure
@@ -204,20 +217,32 @@ CREATE TABLE api_errors (
 
 ## Data Contracts
 
-### Input: AppsFlyer Event (from existing pipeline)
-```json
-{
-  "event_type": "install|purchase|level_up|session",
-  "app_id": "com.company.totalfootball",
-  "campaign_id": "tiktok_tf_001",
-  "creative_id": "creative_001",
-  "revenue": 2.99,
-  "geo": "TH",
-  "timestamp": "2026-03-13T10:00:00Z"
-}
-```
+### Input: AppsFlyer Data (from existing pipeline)
 
-### Output: CampaignPlan (Dify → n8n)
+Two primary tables — full schemas defined in [`game-publishing-data-architect`](../../.agents/skills/Analytics%20%26%20Data/game-publishing-data-architect/SKILL.md) skill, Section 3:
+
+| Table | Key Fields | Use Case |
+|-------|-----------|----------|
+| `install` | `appsflyer_id`, `media_source`, `campaign`, `af_cost_value`, `install_time`, `customer_user_id` | Attribution, CPI, Install counts |
+| `in_app_event` | `event_name`, `event_revenue_usd`, `event_time`, `customer_user_id` | Revenue tracking, LTV, ROAS |
+
+**ID mapping**: AppsFlyer `customer_user_id` → In-game `user_id`
+
+### Input: In-Game Logs (via Kafka/Rsync)
+
+Full schemas defined in skill Section 4:
+
+| Log | Key Fields | Use Case |
+|-----|-----------|----------|
+| Register | `user_id`, `role_id`, `register_time`, `device_id` | NRU calculation |
+| Login | `user_id`, `login_time`, `vip_level`, `fighting_power` | DAU, session tracking |
+| Logout | `user_id`, `logout_time`, `online_time` | Session duration, compliance |
+| Recharge | `user_id`, `transaction_id`, `recharged_value`, `currency_code` | Revenue, PU, LTV |
+| CCU | `event_time`, `server_id`, `online_users` | ACU/PCU/LCU |
+| Money Flow | `user_id`, `money_type`, `flow_type`, `before_value`, `after_value` | Economy audit |
+| Item Flow | `user_id`, `item_id`, `item_quantity`, `item_price` | Item economy |
+
+### Output: CampaignPlan (AI → n8n)
 See [architecture.md](./architecture.md#data-contracts) for full schema.
 
 ### Output: AgentDecision (audit log)

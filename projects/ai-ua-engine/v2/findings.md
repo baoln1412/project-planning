@@ -8,20 +8,22 @@
 
 | ADR# | Decision | Status | Date | Phase |
 |---|---|---|---|---|
-| ADR-001 | Spreadsheet Command Center: n8n Cloud + Google Sheets + Direct API | ✅ Accepted | 2026-03-13 | Phase 3+ |
+| ADR-001 | Web App Console: n8n + Web App + Direct API | ✅ Accepted (Updated) | 2026-03-13 | Phase 3+ |
 | ADR-002 | 3-tier HITL framework (Full Auto / Semi-Auto / Human Only) | ✅ Accepted | 2026-03-13 | Phase 1 |
 | ADR-003 | LTV-based bidding via AppLovin Axon 2.0 + Appodeal AutoBid | ✅ Accepted | 2026-03-13 | Phase 1 |
 | ADR-004 | Creative tagging via platform metrics + LLM, not GPU video analysis | ✅ Accepted | 2026-03-13 | Phase 2 |
 | ADR-005 | Direct Ad Platform API nodes in n8n (No OpenClaw) | ✅ Accepted | 2026-03-13 | Phase 3 |
-| ADR-006 | Pilot: TikTok-only, $500/wk, 1 game to validate core loop | ✅ Accepted | 2026-03-13 | Phase 2 |
+| ADR-006 | Pilot: Facebook-only, $500/wk, 1 game to validate core loop | ✅ Accepted | 2026-03-13 | Phase 2 |
 | ADR-007 | Use existing AppsFlyer data pipeline as primary data source | ✅ Accepted | 2026-03-13 | Phase 2 |
 | ADR-008 | 8-week / 4-sprint phasing: Setup → Creative+Deploy → Closed Loop → Multi-Platform | ✅ Accepted | 2026-03-13 | Phase 3 |
 | ADR-009 | Internal cost-center model | ✅ Accepted | 2026-03-13 | Phase 3 |
 | ADR-010 | n8n Cloud as workflow orchestrator (Avoids Docker/Self-hosting) | ✅ Accepted | 2026-03-13 | Phase 3 |
-| ADR-011 | Google Sheets as UI and Database (Business-team friendly) | ✅ Accepted | 2026-03-13 | Phase 3 |
+| ADR-011 | Web App Console as UI (Premium UX for UA team) | ✅ Accepted (Updated) | 2026-03-16 | Phase 3 |
 | ADR-012 | Claude Sonnet 3.5 Primary + GPT-4o Fallback | ✅ Accepted | 2026-03-13 | Phase 4 |
 | ADR-013 | Google Drive for creative asset storage | ✅ Accepted | 2026-03-13 | Phase 3 |
 | ADR-014 | 6-tool GenAI pipeline | ✅ Accepted | 2026-03-13 | Phase 4 |
+| ADR-015 | Adopt `game-publishing-data-architect` skill as standard for all data schemas, metrics, and log requirements | ✅ Accepted | 2026-03-16 | Phase 1+ |
+| ADR-016 | Two-Branch pLTV Strategy: Branch A (internal) + Branch B (external vendors) | ✅ Accepted | 2026-03-16 | Exploration |
 
 ### ADR-001: Hybrid Orchestration Architecture
 
@@ -73,7 +75,7 @@
 | Monitoring | Hourly pulls, 4h off-peak | ⬜ Not validated | n8n cron triggers | Rate limit handling critical |
 | Anomaly Reaction | < 1 hour | ⬜ Not validated | Real-time alerting + auto-actions | Depends on monitoring frequency |
 | Security | Credentials secured | ⬜ Not validated | Secret management TBD | Token refresh automation needed |
-| Data Integrity | Full audit trail | ⬜ Not validated | Google Sheets logging | May need dedicated DB at scale |
+| Data Integrity | Full audit trail | ⬜ Not validated | Web App + PostgreSQL logging | Backed by enterprise PG |
 | Recovery | RPO 1hr, RTO 4hr | ⬜ Not validated | TBD | DR plan needed |
 | Budget Safety | Guardrails enforced | ⬜ Not validated | Deterministic rules, not LLM-based | Anti-hallucination critical |
 
@@ -91,7 +93,7 @@
 ### Business
 - Southeast Asia market (latency to API endpoints may vary)
 - Team size: 1-2 UA personnel per game (down from 3-5) — system must be self-managing
-- Pilot scope: 1 game on TikTok Ads first, then expand
+- Pilot scope: 1 game on Facebook Ads first, then expand
 
 ### Regulatory / Legal
 - iOS ATT/IDFA compliance — limited user-level tracking
@@ -127,7 +129,7 @@
 | 3-tier HITL framework | 2026-03-13 | Balance speed with safety for budget decisions | ADR-002 |
 | LTV-based bidding via Axon + AutoBid | 2026-03-13 | Target player quality not just quantity | ADR-003 |
 | AppsFlyer pipeline as primary data source | 2026-03-13 | Existing infra, real-time LTV signals, 75-85% fewer API calls | ADR-007 |
-| 10-week / 5-sprint phasing with Week 6 Review Gate | 2026-03-13 | Validate core loop on TikTok before expanding to all platforms | ADR-008 |
+| 10-week / 5-sprint phasing with Week 6 Review Gate | 2026-03-13 | Validate core loop on Facebook before expanding to all platforms | ADR-008 |
 | Internal tool (cost center), not SaaS product | 2026-03-13 | Value = operational efficiency, not direct revenue | ADR-009 |
 
 ## Skills Used
@@ -157,7 +159,7 @@
 - [x] ~~Historical data~~ → Years of campaign data available (strong foundation for LTV modeling)
 - [x] ~~MMP~~ → AppsFlyer (integrate for attribution + funnel data)
 - [x] ~~Video analysis GPU~~ → User prefers ad/creative-level metrics from platforms (CPI, ROAS, CTR per creative) over GPU-intensive video analysis. Creative tagging can use platform-reported metrics + LLM analysis of creative metadata instead of computer vision
-- [x] ~~Pilot budget~~ → $500/week for 1 game on TikTok Ads
+- [x] ~~Pilot budget~~ → $500/week for 1 game on Facebook Ads
 
 ## Session Notes
 
@@ -180,7 +182,7 @@
 - API feasibility confirmed: Meta 9K pts/hr safe, Google needs Standard access, TikTok 600 req/min safe
 - Creative tagging pivot logged as ADR-004 — no GPU needed
 - OpenClaw fallback strategy logged as ADR-005
-- Pilot strategy: TikTok-only, $500/wk, validate core loop (ADR-006)
+- Pilot strategy: Facebook-only, $500/wk, validate core loop (ADR-006)
 - 4 PoC recommendations defined
 - Auto-ran benchmarking-report skill
 - NotebookLM queried for rate limit mitigation strategies
@@ -196,7 +198,7 @@
 ### 2026-03-13 — Phase 3: Solution Strategy
 - Phasing strategy: 10-week / 5-sprint roadmap (from NotebookLM's blueprint)
 - Sprint 1: Infrastructure + Planning Agent (Weeks 1-2)
-- Sprint 2: Creative Pipeline + TikTok Deploy (Weeks 3-4)
+- Sprint 2: Creative Pipeline + Facebook Deploy (Weeks 3-4)
 - Sprint 3: Monitoring + HITL + **Review Gate at Week 6** (Weeks 5-6)
 - Sprint 4: Multi-Platform Expansion (Weeks 7-8)
 - Sprint 5: Analytics + Optimization + Closed Loop (Weeks 9-10)
@@ -261,8 +263,164 @@
 ### 2026-03-13 — Domain Exploration: Alternative Architecture (Enterprise Integration)
 **Skills Used**: Sequential Thinking (8 thoughts), `automation-workflow`
 - **Pivot**: Leveraged existing Enterprise Stack (Internal PG, S3/MinIO, Spark, Iceberg, internal servers).
-- **Simplicity**: Kept Google Sheets as the UA team Console, but backed it with Enterprise machinery instead of siloed Docker containers.
+- **Simplicity**: Replaced Google Sheets with a purpose-built Web App Console, backed by Enterprise machinery (PG, S3, Spark).
 - **Decision**: Remove Dify and OpenClaw to simplify the AI and API logic. Use direct direct LLM calls from internally-hosted n8n.
 - **Impact**: Higher reliability, better security (internal auth/LDAP), and deeper data insights via Spark/Iceberg LTV modeling.
 - **Creation of V2**: All project documents duplicated to `/ai-ua-engine/v2` and fully re-aligned to this Enterprise-Integrated model.
 - **Pilot Ready**: The plan is now leaner (8 weeks) and ready for integration with existing company infrastructure.
+
+### 2026-03-16 — Domain Exploration: n8n vs Airflow + LTV Prediction Approach
+**Skills Used**: Sequential Thinking (3 thoughts), NotebookLM (2 sessions, 3 queries), Web Research (2 searches)
+
+#### Topic 1: n8n vs Apache Airflow — **ADR-010 Validated ✅**
+- **Conclusion**: n8n remains the correct orchestrator choice. Airflow would be overengineering for this use case.
+- n8n wins on: event-driven webhooks, LLM API calling, HITL Slack approvals, visual low-code, team experience
+- Airflow wins on: massive batch ETL, complex DAG dependencies, data lineage, backfill mechanics — none of which are primary needs here
+- Airflow requires significant DevOps/Python expertise — incompatible with 1-2 engineer team
+- **Key insight**: Spark/Iceberg already handles the "heavy data" work that would be Airflow's strength. n8n only orchestrates API calls, LLM reasoning, and HITL flows.
+- **Future consideration**: If scaling to 50+ games requiring nightly ML model retraining, consider Airflow as a DATA-layer addition alongside n8n, not a replacement.
+
+#### Topic 2: LTV Prediction Approach — **ADR-003 Validated ✅, Phased Plan Defined**
+- **Three tiers identified**:
+  - **Tier 1 (Heuristic)**: D7 revenue multipliers, cohort averages. Build: 1-2 weeks. Accuracy: ±20-30%. Needs: 30-90 days historical data (available).
+  - **Tier 2 (Statistical)**: Survival analysis, BG/NBD models. Build: 3-4 weeks (data scientist). Accuracy: ±10-15%. Needs: 3-6 months user-level data.
+  - **Tier 3 (ML)**: XGBoost/LightGBM, neural nets. Build: 6-12 weeks (ML engineer). Accuracy: ±5-10%. Needs: 100K+ users per cohort, ML infra.
+- **Recommended phasing**:
+  - Pilot (Wks 1-8): External LTV via Axon 2.0 + AutoBid (zero build time) + Tier 1 heuristic on Spark
+  - Post-pilot (Wks 9-16): Build Tier 2 statistical models on Spark/Iceberg
+  - Scale (Month 4+): Evaluate Tier 3 ML only with 10+ games and dedicated data science capacity
+- **Critical insight**: Building custom ML LTV from scratch in 8 weeks with 1-2 engineers is NOT realistic. External vendor approach (ADR-003) was the right call.
+- **Spark/Iceberg role**: Perfect for Tier 1 and Tier 2. NOT suited for Tier 3 model serving (would need MLflow or similar).
+
+#### Discovered Constraints
+- Tier 3 ML LTV requires 100K+ users per cohort — single-game pilot likely insufficient
+- D7 multiplier heuristic needs 30-90 days historical cohort data — confirmed available from AppsFlyer
+- Spark/Iceberg batch latency is fine for LTV (inherently a lagging metric, not real-time)
+
+### 2026-03-16 — Domain Exploration: pLTV Prediction Deep-Dive (Two-Track Approach)
+**Skills Used**: Sequential Thinking (4 thoughts), NotebookLM (1 session, 4 queries from 3 new documents), Web Research (3 searches)
+**New Sources**: Customer Growth & Retention Modeling.pdf, pLTV diagram flow, Meta pLTV Solution Sales playbook
+
+#### Track A: Internal pLTV Model (Build In-House)
+
+**What the documents describe** — a mature, closed-loop pLTV pipeline:
+
+**Data Layer** (maps to existing Spark/Iceberg + AppsFlyer pipeline):
+- Internal SDK telemetry → Lakehouse (our Spark/Iceberg)
+- AppsFlyer SDK → Attribution data → Ad Networks
+- Required inputs: Customer table (install dates) + Event table (revenue events)
+- Historical data: 2-3 years recommended — **company has this** ✅
+
+**2-Stage Model** ("Buy Till You Die" / BTYD Framework):
+- **Stage 1 — BG-NBD**: Predicts purchase frequency + churn probability
+  - Uses: x (repeat purchases), t_x (recency), T (customer age)
+- **Stage 2 — Gamma-Gamma**: Predicts average monetary value per transaction
+- Combined LTV = Expected frequency × Expected monetary value × Margin
+- Implementation: Python `lifetimes` library (well-established, battle-tested)
+
+**D0-D3 Feature Engineering**:
+- RFM features (recency, frequency, monetary from first 3 days)
+- Activity trend features (% change in usage, slope of activity)
+- Rolling window features (session ratios, max session gaps)
+- Key principle from docs: **"Feature quality > model complexity"** — simple models often outperform deep models
+
+**Activation Layer** (Synthetic Events):
+- Day 3: Lakehouse pushes pLTV score as **Synthetic Event** via S2S API (CAPI)
+- Payload: Standard Purchase Event with `valueToSum` = predicted LTV, `currency`
+- Ad networks adjust bidding to target ROAS based on synthetic signals
+- Creates Value-Based Lookalike Audiences from high-pLTV users
+
+**Meta-specific Integration** (from pLTV playbook):
+- Map pLTV to Standard Purchase Event for Value Optimization (VO)
+- Bid Multipliers: 1.0x for top 0-2% pLTV VBLAL, 0.9x for 2-4%, 0.7x default
+- ⚠️ Replaces actual purchase values in BAU reporting (needs business approval)
+- Audience thresholds: >2M for AEO campaigns, >4M for VO campaigns
+- 14-day warmup needed with 100+ signals before optimization kicks in
+
+**Build Complexity**: 4-6 weeks, requires 1 data engineer (Spark) + 1 data scientist (modeling)
+
+#### Track B: External Vendor Branch (Axon 2.0 + AutoBid)
+
+**AppLovin Axon 2.0** (UA-side optimizer):
+- Closed-loop AI engine with deep learning on cross-app data
+- Does its OWN LTV prediction internally — you don't build the model
+- Predicts entire value curve: engagement → conversions → purchases → LTV
+- Integration: SDK + MMP (AppsFlyer) sending Install, tutorial_complete, Purchase, Ad Impression
+- ROAS campaigns from Day 1 (IAP, IAA, or blended)
+- Learning phase compressed to ~1 week
+- Self-serve via Axon Ads Manager dashboard
+
+**Appodeal AutoBid** (Monetization + UA automation):
+- Real-time unified auction — all demand partners bid simultaneously
+- LTV Forecasting BI tool: predicts revenues and retention up to **365 days**
+- AI-driven: auto-bidding, budget reallocation, pause low-performers, creative automation
+- Integration: Single SDK (Unity, Android, iOS, React Native, Flutter)
+- MMP integration with Adjust/AppsFlyer for enriched forecasts
+
+**Key Distinction**:
+- Track A: **YOU build** the model, **YOU control** predictions, **YOU send** Synthetic Events
+- Track B: **THEY build/run** the model using their cross-network data + YOUR MMP signals
+- Track B is simpler but gives less control. Track A is cross-platform and vendor-agnostic.
+- **These are NOT mutually exclusive** — optimal approach is layered.
+
+#### ADR-016: Two-Branch pLTV Strategy
+
+- **Status**: ✅ Accepted
+- **Date**: 2026-03-16
+- **Context**: Company has historical data, Spark/Iceberg, AppsFlyer pipeline — all pLTV prerequisites. Team has data analyst + data engineer (no dedicated data scientist). Need to plan LTV prediction as two separate, independently viable branches.
+- **Decision**: Two independent branches, each with its own implementation timeline:
+
+**Branch A — Internal pLTV Model** (Build In-House on Spark/Iceberg):
+
+| Phase | Timeline | What | Team | Libraries |
+|---|---|---|---|---|
+| A1. Feasibility | Wks 9-10 | D7 vs D60 correlation check, feature pipeline | DE + DA | Spark SQL, pandas |
+| A2. Model Build | Wks 11-12 | BG-NBD + Gamma-Gamma, XGBoost payer classifier | DA + DE | lifetimes, XGBoost, Prophet |
+| A3. Productionize | Wks 13-14 | Spark scoring job, S2S Synthetic Events to ad platforms | DE | PySpark, CAPI/S2S SDKs |
+| A4. Optimize | Wks 15-16 | Survival analysis, model recalibration, A/B test | DA | sksurv, scikit-learn |
+
+**Branch B — External Vendor Integration** (Axon 2.0 + Appodeal AutoBid):
+
+| Phase | Timeline | What | Team |
+|---|---|---|---|
+| B1. SDK Setup | Wks 9-10 | AppLovin SDK + Appodeal SDK integration, MMP event forwarding | DE |
+| B2. Campaign Config | Wks 11-12 | ROAS campaigns on Axon, AutoBid budget automation | DE + UA |
+| B3. Validation | Wks 13-14 | Compare vendor LTV predictions vs actual D30/D60 | DA |
+| B4. Scale | Wks 15-16 | Multi-game rollout, vendor performance benchmarking | DA + UA |
+
+- **Consequences**:
+  - ✅ Both branches can run in parallel with the same team
+  - ✅ Branch A: Full control, vendor-agnostic, works across all ad platforms
+  - ✅ Branch B: Fast setup, leverages cross-network data from vendors
+  - ✅ No data scientist needed — lifetimes/XGBoost/Prophet are plug-and-play
+  - ⚠️ Branch A: pLTV Synthetic Events override Meta BAU reporting — needs business sign-off
+  - ⚠️ Branch B: Vendor lock-in, less control over model internals
+  - ⚠️ Audience size thresholds: >2M for AEO, >4M for VO campaigns
+
+#### Team Capability Fit (Updated)
+
+| Library | Difficulty | Who Runs It | Notes |
+|---|---|---|---|
+| `lifetimes` (BG-NBD, Gamma-Gamma) | ⭐ Easy | Data Analyst | 5-10 lines of code, fit() → predict() |
+| `XGBoost` / `LightGBM` | ⭐⭐ Medium | Data Analyst | scikit-learn API, defaults work well |
+| `Prophet` | ⭐ Easy | Data Analyst | Just (date, value) input, auto-seasonality |
+| `sksurv` (Survival Analysis) | ⭐⭐ Medium | Data Analyst | Kaplan-Meier, CoxPH for retention curves |
+| Spark feature pipeline | ⭐⭐ Medium | Data Engineer | SQL + PySpark for D0-D3 extraction |
+| S2S API / CAPI sender | ⭐⭐ Medium | Data Engineer | HTTP integration to ad platforms |
+| AppLovin SDK setup | ⭐⭐ Medium | Data Engineer | SDK integration + MMP config |
+| Appodeal SDK setup | ⭐ Easy | Data Engineer | Single SDK, dashboard config |
+
+#### Discovered Constraints (New)
+- D7 vs D22/D60 feasibility check needed before model building — does early revenue predict long-term value?
+- Synthetic Events permanently alter Meta BAU reporting — requires explicit business sign-off
+- BTYD models assume non-contractual setting ("buy till you die") — valid for gaming ✅
+- Meta VO campaigns need >4M audience size — may not be achievable with single-game pilot
+- `lifetimes` library is maintained but mature — stable API, no frequent breaking changes
+
+#### Impact on Project Planning — ✅ Applied
+- **NOT a new project** — extension of AI UA Engine v2 as Sprint 6-8
+- Pilot plan (Sprints 1-5) stays unchanged
+- Both branches planned as parallel tracks in Sprint 6-8
+- `implementation-plan.md` updated with Sprint 6-8
+- `architecture.md` updated with pLTV pipeline component
+- `tech-stack.md` updated with ML libraries and S2S integration

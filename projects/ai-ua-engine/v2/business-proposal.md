@@ -9,9 +9,12 @@
 
 We propose building an **AI-powered User Acquisition Engine** that leverages our **Enterprise Tech Stack** (PostgreSQL, S3, Spark, Iceberg) to automate the full advertising cycle.
 
-The system uses **Google Sheets as the 'Business Console'** for the UA Team, backed by internal AI workflows that make data-driven decisions using our deep data lake.
+The system features a **purpose-built Web App Console** for the UA Team, backed by internal AI workflows that make data-driven decisions using our deep data lake.
 
 **Bottom line**: This engine can **reduce creative costs by 50-70%**, **improve ROAS by 15-25%**, and requires **zero new software infrastructure**. We can launch a pilot in just **8 weeks**.
+
+> 🎨 **[View the UA Engine Console UI Design →](https://stitch.google.com/projects/4927106575879540181)**
+> Premium dark-themed web app with real-time dashboards, AI agent activity feeds, pLTV analytics, and campaign management.
 
 ---
 
@@ -35,12 +38,12 @@ The system uses **Google Sheets as the 'Business Console'** for the UA Team, bac
 │                                                          │
 │  ┌──────────────────┐      ┌──────────────────────────┐  │
 │  │  Business Console│      │    Enterprise Backend    │  │
-│  │ (Google Sheets)  │ ↔  │ (Internal n8n + PG + S3) │  │
+│  │   (Web App)      │ ↔  │ (Internal n8n + PG + S3) │  │
 │  └──────────────────┘      └────────────┬─────────────┘  │
 │                                           │              │
 │  ┌────────────────────────────────────────┴───────────┐  │
 │  │          Spark + Iceberg Analytics Layer           │  │
-│  │      (Predictive LTV, Attribution, Insights)       │  │
+│  │   (pLTV Prediction, Attribution, Insights)        │  │
 │  └────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -51,7 +54,7 @@ The system uses **Google Sheets as the 'Business Console'** for the UA Team, bac
 |---|---|---|
 | **Planning** | UA manager analyzes spreadsheets, sets budgets | AI agent analyzes AppsFlyer data, generates optimized campaign plans |
 | **Creative** | Designers create 5-10 variants manually | AI generates 50-100 variants using GenAI tools (Creatify, OpenArt.ai) |
-| **Deployment** | Manual upload to each ad platform | Automated deployment to TikTok, Facebook, Google in minutes |
+| **Deployment** | Manual upload to each ad platform | Automated deployment to Facebook, Google, TikTok in minutes |
 | **Monitoring** | Check dashboards 1-2x daily | AI monitors 24/7, auto-pauses bad ads, alerts on anomalies |
 | **Optimization** | Weekly manual adjustments | Continuous AI-driven optimization with human approval for big changes |
 
@@ -88,7 +91,7 @@ The AI doesn't operate unchecked. Three tiers of control:
 |---|---|---|
 | **P1: Enterprise Setup** | 2 Weeks | n8n connected to Internal PG, S3, & Sheets |
 | **P2: AI & Data Logic** | 2 Weeks | Spark views for LTV-based AI campaign plans |
-| **P3: Creative & Deploy**| 2 Weeks | S3 creative pipeline + TikTok live deployment |
+| **P3: Creative & Deploy**| 2 Weeks | S3 creative pipeline + Facebook live deployment |
 | **P4: Monitoring & Scale**| 2 Weeks | Automated monitoring loop + multi-platform |
 
 ### Cost Breakdown
@@ -140,13 +143,13 @@ The AI doesn't operate unchecked. Three tiers of control:
 
 ## Decision Requested
 
-**Approve the 8-week pilot** to validate the AI UA Engine on 1 game (Total Football) with TikTok Ads.
+**Approve the 8-week pilot** to validate the AI UA Engine on 1 game (Total Football) with Facebook Ads.
 
 | What We Need | From Whom |
 |---|---|
 | Engineering allocation (1 FTE, 8 weeks) | Engineering Lead |
-| TikTok Ads pilot budget ($500/week × 8 weeks) | Marketing / Finance |
-| API keys for TikTok, GenAI tools | UA Team |
+| Facebook Ads pilot budget ($500/week × 8 weeks) | Marketing / Finance |
+| API keys for Facebook, GenAI tools | UA Team |
 | Weekly 1-hour review sessions | UA Manager |
 | Production server access (Week 5+) | DevOps / IT |
 
@@ -155,7 +158,7 @@ The AI doesn't operate unchecked. Three tiers of control:
 - Creative production is ≥5x faster
 - System operates reliably with <1hr anomaly response
 
-If the gate passes → expand to Facebook and Google (Sprints 4-5).
+If the gate passes → expand to TikTok and Google (Sprints 4-5).
 If it doesn't → lessons learned documented, minimal investment lost.
 
 ---
@@ -170,6 +173,7 @@ If it doesn't → lessons learned documented, minimal investment lost.
 | [Architecture](./architecture.md) | C4 diagrams, data contracts, security, deployment |
 | [Implementation Plan](./implementation-plan.md) | Sprint tasks, Gantt chart, milestones |
 | [Technical Handoff](./handoff.md) | Developer-ready setup guide |
-| [Findings](./findings.md) | All 15 ADRs, risk log, session notes |
+| [Findings](./findings.md) | All ADRs, risk log, session notes |
+| [**UA Console UI** →](https://stitch.google.com/projects/4927106575879540181) | Interactive web app design (Stitch preview) |
 
 > 💡 **Tip**: Run `/plan-export` to export this proposal as a formatted .docx for presentation.

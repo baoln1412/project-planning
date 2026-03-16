@@ -8,7 +8,7 @@
 | Layer | Technology | Role | License | Decision |
 |---|---|---|---|---|
 | **Orchestration** | n8n (Internal Server) | Workflow engine, API calls, scheduling | Enterprise | ✅ ADR-010 |
-| **User Interface** | Google Sheets | Control plane, dashboard, configuration | Google Workspace | ✅ ADR-011 |
+| **User Interface** | Web App Console | Control plane, dashboard, campaign management | Internal | ✅ ADR-011 |
 | **Backend State** | Internal PostgreSQL | Campaign state, creative metadata, audit logs | Enterprise | ✅ ADR-013 |
 | **Asset Storage** | Internal S3 / MinIO | Media files (creatives) storage | Enterprise | ✅ ADR-005 |
 | **Analytics Layer**| Spark + Iceberg | LTV modeling, attribution analysis | Enterprise | ✅ ADR-007 |
@@ -17,6 +17,7 @@
 | **Creative Gen** | Creatify, OpenArt.ai, etc. | Video/image generation | Commercial API | ✅ ADR-014 |
 | **Notifications** | Slack + Telegram | HITL alerts and approvals | Commercial | — |
 | **Auth/Identity** | Internal Auth (SSO/LDAP) | User access control for n8n/Sheets | Enterprise | Existing |
+| **Data Standards** | [`game-publishing-data-architect`](../../.agents/skills/Analytics%20%26%20Data/game-publishing-data-architect/SKILL.md) | Log schemas, metrics definitions, data architecture | Internal Skill | ✅ ADR-015 |
 
 ---
 
@@ -38,16 +39,16 @@
 
 ### Layer 2: AI Brain — Dify
 
-#### ADR-011: Google Sheets as Interface and Database
+#### ADR-011: Web App Console as User Interface
 
-- **Status**: ✅ Accepted
-- **Context**: Need a single point of control that is understandable and editable by the UA team.
-- **Decision**: **Google Sheets** — Direct interface for campaign planning, metrics dashboard, and audit logging.
+- **Status**: ✅ Accepted (Updated)
+- **Context**: Need a purpose-built interface with premium UX for the UA team — dashboards, campaign management, pLTV analytics.
+- **Decision**: **Web App Console** — Custom dark-themed web application backed by PostgreSQL, communicating with n8n via REST API.
 - **Consequences**:
-  - ✅ UA team already knows the tool; zero training
-  - ✅ Fully transparent and easy to share/filter
-  - ⚠️ Scalability limits (~10M cells) — enough for pilot and 3-5 games
-  - ⚠️ Manual edits can break n8n watchers (mitigated by sheet protection/validation)
+  - ✅ Premium UX with real-time dashboards, AI agent activity feeds, and campaign management
+  - ✅ No scalability limits — backed by PostgreSQL
+  - ✅ Better data validation and user workflows than spreadsheet
+  - ⚠️ Requires frontend development (mitigated by using modern framework + Stitch for rapid UI design)
 
 ---
 
@@ -175,3 +176,78 @@ All components communicate via HTTP/REST or direct database connections. No comp
 | GenAI tool APIs | ⚠️ Some | Low-Medium | Low |
 
 **Overall**: Team is well-positioned. Only OpenClaw/MCP is genuinely new territory (covered by ADR-005 fallback strategy).
+
+---
+
+## pLTV Extension: Two-Branch Technology Stack (ADR-016)
+
+> **Added**: 2026-03-16
+> **Status**: Accepted — extends Sprint 6-8
+
+### Branch A: Internal pLTV Model Stack
+
+| Layer | Technology | Role | Difficulty | Who |
+|---|---|---|---|---|
+| **Feature Pipeline** | Spark SQL + PySpark | D0-D3 feature extraction from Lakehouse | ⭐⭐ Medium | Data Engineer |
+| **Probabilistic CLV** | Python `lifetimes` | BG-NBD (frequency/churn) + Gamma-Gamma (monetary) | ⭐ Easy | Data Analyst |
+| **Payer Classifier** | XGBoost / LightGBM | D0-D3 behavioral features → payer probability | ⭐⭐ Medium | Data Analyst |
+| **Revenue Forecast** | Prophet (Meta) | Cohort revenue curve extrapolation | ⭐ Easy | Data Analyst |
+| **Retention Model** | scikit-survival (`sksurv`) | Kaplan-Meier + CoxPH for churn timing | ⭐⭐ Medium | Data Analyst |
+| **Model Serving** | PySpark UDF (batch) | Daily scoring job on Spark/Iceberg | ⭐⭐ Medium | Data Engineer |
+| **S2S Integration** | Meta CAPI, Google S2S, TikTok Events API | Push Synthetic Events (pLTV as `valueToSum`) | ⭐⭐ Medium | Data Engineer |
+
+**Why these libraries work without a data scientist:**
+- `lifetimes`: Literally 5-10 lines → `BetaGeoFitter().fit()` → `predict()`
+- `XGBoost`: scikit-learn compatible API, defaults work well on tabular data
+- `Prophet`: Input is just `(ds, y)` — dates and values, auto-handles seasonality
+- `sksurv`: Standard survival analysis, interpretable coefficients
+
+#### Branch A Cost Estimate
+
+| Component | Monthly Cost | Notes |
+|---|---|---|
+| Spark compute (incremental) | $0 | Uses existing enterprise Spark cluster |
+| Python libraries | $0 | All open-source |
+| S2S API calls | $0 | Free (Meta CAPI, Google S2S) |
+| **Total** | **$0** | All infrastructure already exists |
+
+---
+
+### Branch B: External Vendor Stack
+
+| Layer | Technology | Role | Integration | Who |
+|---|---|---|---|---|
+| **UA Optimization** | AppLovin Axon 2.0 | Predictive bidding, ROAS optimization, LTV-based targeting | SDK + MMP | Data Engineer |
+| **Monetization + UA** | Appodeal AutoBid | Real-time unified auction, LTV forecasting (365d), budget automation | Single SDK | Data Engineer |
+| **Attribution** | AppsFlyer (existing) | MMP event forwarding to both vendors | Already integrated | — |
+
+**Key integration requirements (MMP events to forward):**
+- `Install` event
+- `tutorial_complete` (or equivalent early progression signal)
+- `Purchase` (with revenue value parameter)
+- `Ad Impression` (with ad revenue value parameter)
+
+#### Branch B Cost Estimate
+
+| Component | Monthly Cost | Notes |
+|---|---|---|
+| AppLovin Axon 2.0 | Performance-based | % of ad spend (included in media cost) |
+| Appodeal AutoBid | Revenue share | % of ad revenue (typically 10-20%) |
+| SDK maintenance | $0 | Standard game SDK updates |
+| **Total** | **~Performance-based** | No fixed monthly fees |
+
+---
+
+### Branch Comparison
+
+| Criteria | Branch A (Internal) | Branch B (External Vendors) |
+|---|---|---|
+| **Control** | Full — you own the model | Limited — vendor black box |
+| **Cross-platform** | Yes — works on all ad platforms | No — each vendor optimizes own network |
+| **Build time** | 4-8 weeks | 2-3 weeks |
+| **Maintenance** | Monthly recalibration | Vendor-managed |
+| **Data requirement** | 2-3 years historical (available ✅) | 14-day warmup per campaign |
+| **Cost** | $0 (existing infra) | Performance-based revenue share |
+| **Team needed** | Data Analyst + Data Engineer | Data Engineer |
+| **Meta VO support** | ✅ via Synthetic Events | ❌ No Meta VO integration |
+| **Vendor lock-in** | None | Yes |

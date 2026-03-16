@@ -194,7 +194,7 @@ VPS cluster + Redis + monitoring services.
 
 ## Data Architecture
 
-### Data Model
+### Data Model — Filesystem (Viewer)
 
 ```mermaid
 erDiagram
@@ -226,18 +226,118 @@ erDiagram
     PROJECT ||--o{ VERSION : "has"
 ```
 
+### Data Model — SQLite Database (Project Management)
+
+```mermaid
+erDiagram
+    TASK {
+        int id PK "Auto-increment"
+        string projectSlug "FK to filesystem project"
+        string title "Action-oriented task name"
+        string description "Rich text details"
+        string status "not-started|in-progress|in-review|complete|blocked"
+        string priority "urgent|high|medium|low"
+        string owner "Team member name"
+        date dueDate "Deadline"
+        int sprintId FK "Optional sprint"
+        int milestoneId FK "Optional milestone"
+        string dependencies "Comma-separated task IDs"
+        json tags "Array of tags"
+        int sortOrder "Manual ordering"
+        string healthScore "green|yellow|red (computed)"
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    SPRINT {
+        int id PK
+        string projectSlug
+        string name "e.g. Sprint 1"
+        string goal "Sprint objective"
+        date startDate
+        date endDate
+        string status "planning|active|completed|cancelled"
+    }
+
+    MILESTONE {
+        int id PK
+        string projectSlug
+        string name "e.g. Milestone 1"
+        string description
+        date dueDate
+        string status "pending|in-progress|completed"
+        json acceptanceCriteria "Array of checkable items"
+    }
+
+    COMMENT {
+        int id PK
+        int taskId FK "Optional"
+        string projectSlug
+        string documentType "Optional — overview, architecture, etc."
+        string author
+        string content
+        datetime createdAt
+    }
+
+    REVIEW {
+        int id PK
+        string projectSlug
+        string documentType "Which doc is reviewed"
+        string reviewer
+        string status "pending|approved|changes-requested"
+        json checklist "3-tier: critical, important, nice-to-have items"
+        string comments
+        datetime createdAt
+        datetime resolvedAt
+    }
+
+    ISSUE {
+        int id PK
+        string projectSlug
+        string title
+        string description
+        string severity "critical|important|minor"
+        string status "open|in-progress|resolved|closed"
+        string rootCause
+        string fix
+        datetime createdAt
+        datetime resolvedAt
+    }
+
+    ACTIVITY {
+        int id PK
+        string projectSlug
+        string eventType "task-status-change|comment|review|handoff|issue"
+        string description
+        string actor "Who performed the action"
+        json metadata "Event-specific data"
+        datetime createdAt
+    }
+
+    SPRINT ||--o{ TASK : "contains"
+    MILESTONE ||--o{ TASK : "groups"
+    TASK ||--o{ COMMENT : "has"
+    TASK ||--o{ ACTIVITY : "generates"
+```
+
 ### Key Data Flows
 
 1. **Project Discovery**: Server scans `projects/` → reads each `overview.md` → extracts name, status, summary → builds project index
 2. **Document Rendering**: Client requests project detail → server reads all `.md` files in project folder → parses frontmatter + content → sends to client → React renders Markdown + Mermaid
 3. **Version Comparison**: Client requests diff → server reads CHANGELOG.md → parses version entries → runs `diff` library → sends diff data → client renders side-by-side view
 4. **File Change Detection**: `chokidar` watches `projects/` → on file change → invalidates in-memory cache → next request gets fresh data
+5. **Task Seeding** *(new)*: User triggers seed → server parses task tables from `implementation-plan.md` → creates Task records in SQLite → returns seeded task count
+6. **Task Board** *(new)*: Client renders Kanban → drag-and-drop triggers PATCH to `/api/projects/:slug/tasks/:id` → server updates `status` in SQLite → broadcasts to connected clients
+7. **Sprint Tracking** *(new)*: Client requests sprint data → server queries SQLite for tasks in sprint → calculates burndown (tasks remaining vs. days left) → returns sprint metrics
+8. **Health Scoring** *(new)*: Server computes per-task health score: overdue (+3), blocked (+3), no owner (+2), dependency-stalled (+2). Total 7+ = 🔴, 4-6 = 🟡, 0-3 = 🟢
+9. **Review Workflow** *(new)*: Reviewer opens document → creates review with 3-tier checklist → checks items → signs off with approve/request-changes → status badge updates on document tab
+10. **Activity Feed** *(new)*: Every state change (task transition, comment, review, handoff) creates an Activity record → feed queries sorted by `createdAt` desc
 
 ---
 
 ## API Design
 
-### Key Endpoints
+### Viewer Endpoints (Existing)
 
 ```
 GET  /api/projects              → ProjectSummary[]
@@ -249,9 +349,49 @@ GET  /api/search?q=query        → SearchResult[]
 GET  /api/health                → { status: "ok", uptime, projectCount }
 ```
 
+### PM Endpoints (New)
+
+```
+# Tasks
+GET    /api/projects/:slug/tasks            → Task[]
+POST   /api/projects/:slug/tasks            → Task (create)
+PATCH  /api/projects/:slug/tasks/:id        → Task (update status, owner, priority, etc.)
+DELETE /api/projects/:slug/tasks/:id        → void
+POST   /api/projects/:slug/tasks/seed       → { seeded: number } (parse from implementation-plan.md)
+
+# Sprints
+GET    /api/projects/:slug/sprints          → Sprint[] (with task counts)
+POST   /api/projects/:slug/sprints          → Sprint (create)
+PATCH  /api/projects/:slug/sprints/:id      → Sprint (update, complete)
+GET    /api/projects/:slug/sprints/:id/burndown → BurndownData[]
+
+# Milestones
+GET    /api/projects/:slug/milestones       → Milestone[]
+POST   /api/projects/:slug/milestones       → Milestone (create)
+PATCH  /api/projects/:slug/milestones/:id   → Milestone (update, check criteria)
+
+# Comments
+GET    /api/projects/:slug/comments?taskId=X&docType=Y → Comment[]
+POST   /api/projects/:slug/comments         → Comment (create)
+
+# Reviews
+GET    /api/projects/:slug/reviews          → Review[]
+POST   /api/projects/:slug/reviews          → Review (create with checklist)
+PATCH  /api/projects/:slug/reviews/:id      → Review (sign off, update status)
+
+# Issues
+GET    /api/projects/:slug/issues           → Issue[]
+POST   /api/projects/:slug/issues           → Issue (create)
+PATCH  /api/projects/:slug/issues/:id       → Issue (update status, add fix)
+
+# Activity
+GET    /api/projects/:slug/activity         → Activity[] (latest 50, with pagination)
+```
+
 ### Response Shapes
 
 ```typescript
+// === Viewer Types (Existing) ===
 interface ProjectSummary {
   slug: string;
   name: string;
@@ -259,6 +399,10 @@ interface ProjectSummary {
   summary: string;
   lastUpdated: string; // ISO 8601
   documentCount: number;
+  // New PM fields
+  taskProgress: { done: number; total: number };
+  healthScore: 'green' | 'yellow' | 'red';
+  activeSprint: string | null;
 }
 
 interface ProjectDetail {
@@ -270,8 +414,8 @@ interface ProjectDetail {
 }
 
 interface Document {
-  type: string; // 'overview' | 'research' | 'tech-stack' | ...
-  content: string; // Raw Markdown
+  type: string;
+  content: string;
   frontmatter: Record<string, unknown>;
   lastModified: string;
 }
@@ -287,4 +431,107 @@ interface DiffResult {
   toVersion: string;
   changes: DiffChange[];
 }
+
+// === PM Types (New) ===
+type TaskStatus = 'not-started' | 'in-progress' | 'in-review' | 'complete' | 'blocked';
+type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
+type HealthScore = 'green' | 'yellow' | 'red';
+
+interface Task {
+  id: number;
+  projectSlug: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  owner: string | null;
+  dueDate: string | null;
+  sprintId: number | null;
+  milestoneId: number | null;
+  dependencies: number[];
+  tags: string[];
+  sortOrder: number;
+  healthScore: HealthScore;
+  commentCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Sprint {
+  id: number;
+  projectSlug: string;
+  name: string;
+  goal: string;
+  startDate: string;
+  endDate: string;
+  status: 'planning' | 'active' | 'completed' | 'cancelled';
+  taskCount: { total: number; done: number; inProgress: number; blocked: number };
+}
+
+interface Milestone {
+  id: number;
+  projectSlug: string;
+  name: string;
+  description: string;
+  dueDate: string | null;
+  status: 'pending' | 'in-progress' | 'completed';
+  acceptanceCriteria: { text: string; checked: boolean }[];
+  taskCount: { total: number; done: number };
+}
+
+interface Comment {
+  id: number;
+  taskId: number | null;
+  projectSlug: string;
+  documentType: string | null;
+  author: string;
+  content: string;
+  createdAt: string;
+}
+
+interface Review {
+  id: number;
+  projectSlug: string;
+  documentType: string;
+  reviewer: string;
+  status: 'pending' | 'approved' | 'changes-requested';
+  checklist: {
+    critical: { text: string; passed: boolean }[];
+    important: { text: string; passed: boolean }[];
+    niceToHave: { text: string; passed: boolean }[];
+  };
+  comments: string;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+interface Issue {
+  id: number;
+  projectSlug: string;
+  title: string;
+  description: string;
+  severity: 'critical' | 'important' | 'minor';
+  status: 'open' | 'in-progress' | 'resolved' | 'closed';
+  rootCause: string | null;
+  fix: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+interface Activity {
+  id: number;
+  projectSlug: string;
+  eventType: 'task-status-change' | 'comment' | 'review' | 'handoff' | 'issue';
+  description: string;
+  actor: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+interface BurndownData {
+  date: string;
+  tasksRemaining: number;
+  idealRemaining: number;
+}
 ```
+
